@@ -1,0 +1,2200 @@
+{
+ "meta": {
+  "version": "1.0.0",
+  "generated_by": "scripts/import_sources.py - do not edit by hand",
+  "sources": [
+   "github.com/Universal-Debloater-Alliance/universal-android-debloater-next-generation (UAD-ng) uad_lists.json",
+   "github.com/26zl/tv-tweak (device profiles: firetv-stick-hd, sharp-4k-googletv)",
+   "github.com/therealhoodboy/skinny-bravia (Sony Bravia)",
+   "tv.cobanov.dev (never-disable list)",
+   "github.com/seun-novodev/android-tv-debloat-toolkit (TCL safe list)",
+   "tvslim.app package catalogue (descriptions)",
+   "hand-curated (data/curated_extra.json)"
+  ],
+  "counts": {
+   "packages": 207,
+   "keep": 70,
+   "heuristics": 19
+  }
+ },
+ "tiers": {
+  "ads": {
+   "label": "Ads & Telemetry",
+   "desc": "Advertising, ad IDs, content recognition (ACR), analytics, crash/usage reporting.",
+   "default_risk": "safe",
+   "recommended": true
+  },
+  "promo": {
+   "label": "Promo & Recommendations",
+   "desc": "Recommendation rows, sponsored/promotional surfaces, demo loops, ambient ad screensavers.",
+   "default_risk": "safe",
+   "recommended": true
+  },
+  "ota": {
+   "label": "OTA / Updaters",
+   "desc": "Over-the-air firmware update components. Disabling stops (forced) updates - usually fine if you update manually or want to freeze a version.",
+   "default_risk": "expert",
+   "recommended": false
+  },
+  "cruft": {
+   "label": "Cruft",
+   "desc": "Tutorials, on-screen manuals, legal notices, help apps, stubs, unused leftovers.",
+   "default_risk": "safe",
+   "recommended": true
+  },
+  "vendor": {
+   "label": "Vendor Apps & Services",
+   "desc": "OEM preinstalled apps and background services (stores, dashboards, antivirus, browsers...). Review each one.",
+   "default_risk": "caution",
+   "recommended": false
+  },
+  "streaming": {
+   "label": "Preinstalled Streaming",
+   "desc": "Streaming apps that shipped with the TV. Disable only the ones you don't use.",
+   "default_risk": "caution",
+   "recommended": false
+  },
+  "games": {
+   "label": "Games & Cloud Gaming",
+   "desc": "Game hubs, cloud gaming, game stores.",
+   "default_risk": "safe",
+   "recommended": true
+  },
+  "google_misc": {
+   "label": "Extra Google Apps",
+   "desc": "Google apps that are rarely used on a TV (Movies, Games, Photos...).",
+   "default_risk": "safe",
+   "recommended": true
+  },
+  "cast": {
+   "label": "Casting",
+   "desc": "Chromecast built-in / DIAL / Miracast. Opt-in: phones will no longer cast to the TV.",
+   "default_risk": "caution",
+   "recommended": false
+  },
+  "assistant": {
+   "label": "Voice & Assistant",
+   "desc": "Google Assistant / Alexa / voice search. Opt-in: voice remote stops working.",
+   "default_risk": "caution",
+   "recommended": false
+  },
+  "accessibility": {
+   "label": "Accessibility",
+   "desc": "TalkBack, TTS, accessibility services. Do not disable unless you are sure.",
+   "default_risk": "expert",
+   "recommended": false
+  },
+  "core": {
+   "label": "System Core",
+   "desc": "Part of the operating system. Protected.",
+   "default_risk": "unsafe",
+   "recommended": false
+  },
+  "unclassified": {
+   "label": "Unclassified",
+   "desc": "Not found in any public database. Research before touching.",
+   "default_risk": "expert",
+   "recommended": false
+  }
+ },
+ "keep": [
+  {
+   "pkg": "android",
+   "reason": "The OS itself."
+  },
+  {
+   "pkg": "com.android.systemui",
+   "reason": "System UI - disabling blanks the screen / boot-loops."
+  },
+  {
+   "pkg": "com.android.providers.settings",
+   "reason": "Settings provider - core system."
+  },
+  {
+   "pkg": "com.android.providers.tv",
+   "reason": "TV provider - channels/live TV data."
+  },
+  {
+   "pkg": "com.android.tv.settings",
+   "reason": "TV Settings app - disabling locks you out of settings."
+  },
+  {
+   "pkg": "com.android.location.fused",
+   "reason": "Disabling it sends many TVs into a boot loop (reported by multiple vendors)."
+  },
+  {
+   "pkg": "com.android.vending",
+   "reason": "Google Play Store - updates and app installs."
+  },
+  {
+   "pkg": "com.google.android.gms",
+   "reason": "Google Play Services - apps crash without it."
+  },
+  {
+   "pkg": "com.google.android.gsf",
+   "reason": "Google Services Framework - GMS companion."
+  },
+  {
+   "pkg": "com.google.android.webview",
+   "reason": "Android System WebView - many apps embed web content."
+  },
+  {
+   "pkg": "com.google.android.permissioncontroller",
+   "reason": "Runtime permission handling."
+  },
+  {
+   "pkg": "com.google.android.packageinstaller",
+   "reason": "APK installer."
+  },
+  {
+   "pkg": "com.google.android.apps.tv.launcherx",
+   "reason": "Google TV Home = the home screen. Disable ONLY after an alternative launcher (FLauncher/Projectivy) is installed and set as default, otherwise you get a black screen.",
+   "soft": true,
+   "launcher": true
+  },
+  {
+   "pkg": "com.google.android.tvlauncher",
+   "reason": "Android TV Home = the home screen. Disable ONLY after an alternative launcher is installed and set as default.",
+   "soft": true,
+   "launcher": true
+  },
+  {
+   "pkg": "com.google.android.leanbacklauncher",
+   "reason": "Android TV Home (older) = the home screen. Disable ONLY after an alternative launcher is set as default.",
+   "soft": true,
+   "launcher": true
+  },
+  {
+   "pkg": "com.amazon.tv.launcher",
+   "reason": "Fire TV home screen. Disable only after installing an alternative launcher.",
+   "soft": true,
+   "launcher": true
+  },
+  {
+   "pkg": "com.google.android.tv.remote.service",
+   "reason": "Enables controlling this TV from phones / Google Home app."
+  },
+  {
+   "pkg": "com.google.android.inputmethod.latin",
+   "reason": "Gboard - the on-screen keyboard. Disable only after installing another keyboard.",
+   "ime": true
+  },
+  {
+   "pkg": "com.android.inputmethod.latin",
+   "reason": "AOSP on-screen keyboard. Disable only after installing another keyboard.",
+   "ime": true
+  },
+  {
+   "pkg": "com.amazon.tv.ime",
+   "reason": "Fire TV on-screen keyboard.",
+   "ime": true
+  },
+  {
+   "pkg": "com.tcl.suspension",
+   "reason": "Looks like junk but it is the Inputs/Source menu on the remote. Disabling it means you cannot switch to HDMI (TCL)."
+  },
+  {
+   "pkg": "com.tcl.ttvs",
+   "reason": "TCL system update service. Looks like TTS, but disabling silently breaks the update menu."
+  },
+  {
+   "pkg": "com.tcl.tv",
+   "reason": "TCL HDMI / antenna TV input service."
+  },
+  {
+   "pkg": "com.tcl.tvinput",
+   "reason": "TCL HDMI / antenna TV input service."
+  },
+  {
+   "pkg": "com.tcl.tcl_bt_rcu_service",
+   "reason": "TCL Bluetooth remote control service."
+  },
+  {
+   "pkg": "com.tcl.autopair",
+   "reason": "TCL remote pairing service."
+  },
+  {
+   "pkg": "com.google.android.tv.inputplayer",
+   "reason": "TV input playback (HDMI/antenna feed rendering)."
+  },
+  {
+   "pkg": "com.google.android.tv.mtc.remotepairer",
+   "reason": "Remote pairing (MediaTek)."
+  },
+  {
+   "pkg": "com.mediatek.tv.oneworld.tvcenter",
+   "reason": "HDMI input switcher on MediaTek Google TVs - looks like junk, breaks Inputs if disabled."
+  },
+  {
+   "pkg": "com.mediatek.tis",
+   "reason": "MediaTek TV input service."
+  },
+  {
+   "pkg": "com.mediatek.tv.agent",
+   "reason": "MediaTek TV agent service."
+  },
+  {
+   "pkg": "com.mediatek.tv.settings",
+   "reason": "MediaTek TV settings (picture/audio) - breaking it breaks your TV menus."
+  },
+  {
+   "pkg": "com.mediatek.dtv.tvinput.dvbtuner",
+   "reason": "DVB tuner input service."
+  },
+  {
+   "pkg": "com.dolby.android.audio.service",
+   "reason": "Dolby audio - disabling breaks sound or audio quality on TVs with Dolby."
+  },
+  {
+   "pkg": "com.amazon.fireinputdevices",
+   "reason": "Fire TV remote input - disabling breaks the remote."
+  },
+  {
+   "pkg": "com.amazon.tv.settings.core",
+   "reason": "Fire TV Settings - locks you out of settings."
+  },
+  {
+   "pkg": "com.amazon.tv.settings.v2",
+   "reason": "Fire TV Settings - locks you out of settings."
+  },
+  {
+   "pkg": "com.amazon.device.controllermanager",
+   "reason": "Fire TV controller manager."
+  },
+  {
+   "pkg": "com.amazon.tcomm",
+   "reason": "Fire TV transport layer (required by SystemUI and others)."
+  },
+  {
+   "pkg": "com.amazon.identity.auth.device.authorization",
+   "reason": "Amazon account auth - disabling signs you out / breaks Prime Video."
+  },
+  {
+   "pkg": "com.amazon.dcp",
+   "reason": "Amazon device messaging - core Fire OS service."
+  },
+  {
+   "pkg": "com.amazon.firebat",
+   "reason": "Despite the name this is the Prime Video app.",
+   "soft": true
+  },
+  {
+   "pkg": "com.netflix.ninja",
+   "reason": "Netflix app.",
+   "soft": true
+  },
+  {
+   "pkg": "com.netflix.tokenmanager",
+   "reason": "Netflix companion service.",
+   "soft": true
+  },
+  {
+   "pkg": "com.google.android.youtube.tv",
+   "reason": "YouTube app (preinstalled).",
+   "soft": true
+  },
+  {
+   "pkg": "com.spotify.tv.android",
+   "reason": "Spotify TV app.",
+   "soft": true
+  },
+  {
+   "pkg": "com.apple.atve.androidtv.appletv",
+   "reason": "Apple TV app.",
+   "soft": true
+  },
+  {
+   "pkg": "com.disney.disneyplus",
+   "reason": "Disney+ app.",
+   "soft": true
+  },
+  {
+   "pkg": "com.google.android.apps.tv.dreamx",
+   "reason": "Google TV ambient screensaver - the ads-laden one. Disable it for a calmer standby screen (soft-protected: review before selecting).",
+   "soft": true
+  },
+  {
+   "pkg": "com.mediatek.wwtv.mediaplayer",
+   "reason": "MediaTek media player (plays USB/network files). Disable only if you use another player (VLC/Kodi).",
+   "soft": true
+  },
+  {
+   "pkg": "com.amazon.ale",
+   "reason": "Never-disabled list of the firetv-stick-hd tv-tweak profile."
+  },
+  {
+   "pkg": "com.amazon.franktvinput",
+   "reason": "Never-disabled list of the firetv-stick-hd tv-tweak profile."
+  },
+  {
+   "pkg": "com.amazon.ssm",
+   "reason": "Never-disabled list of the firetv-stick-hd tv-tweak profile."
+  },
+  {
+   "pkg": "com.amazon.ssmsys",
+   "reason": "Never-disabled list of the firetv-stick-hd tv-tweak profile."
+  },
+  {
+   "pkg": "com.amazon.tcomm.client",
+   "reason": "Never-disabled list of the firetv-stick-hd tv-tweak profile."
+  },
+  {
+   "pkg": "com.amazon.tv.intentsupport",
+   "reason": "Never-disabled list of the firetv-stick-hd tv-tweak profile."
+  },
+  {
+   "pkg": "com.amazon.tv.keypolicymanager",
+   "reason": "Never-disabled list of the firetv-stick-hd tv-tweak profile."
+  },
+  {
+   "pkg": "com.amazon.tv.routing",
+   "reason": "Never-disabled list of the firetv-stick-hd tv-tweak profile."
+  },
+  {
+   "pkg": "com.amazon.webview.chromium",
+   "reason": "Never-disabled list of the firetv-stick-hd tv-tweak profile."
+  },
+  {
+   "pkg": "com.esaba.downloader",
+   "reason": "Never-disabled list of the firetv-stick-hd tv-tweak profile."
+  },
+  {
+   "pkg": "com.mediatek.tvinput",
+   "reason": "Never-disabled list of the firetv-stick-hd tv-tweak profile."
+  },
+  {
+   "pkg": "com.discovery.dplay",
+   "reason": "Never-disabled list of the sharp-4k-googletv tv-tweak profile."
+  },
+  {
+   "pkg": "com.google.android.marvin.talkback",
+   "reason": "Never-disabled list of the sharp-4k-googletv tv-tweak profile."
+  },
+  {
+   "pkg": "com.google.android.tts",
+   "reason": "Never-disabled list of the sharp-4k-googletv tv-tweak profile."
+  },
+  {
+   "pkg": "com.mediatek.autopair",
+   "reason": "Never-disabled list of the sharp-4k-googletv tv-tweak profile."
+  },
+  {
+   "pkg": "com.skyshowtime.skyshowtime.google",
+   "reason": "Never-disabled list of the sharp-4k-googletv tv-tweak profile."
+  },
+  {
+   "pkg": "com.wbd.stream",
+   "reason": "Never-disabled list of the sharp-4k-googletv tv-tweak profile."
+  },
+  {
+   "pkg": "no.altibox.tv",
+   "reason": "Never-disabled list of the sharp-4k-googletv tv-tweak profile."
+  },
+  {
+   "pkg": "no.nrk.tv",
+   "reason": "Never-disabled list of the sharp-4k-googletv tv-tweak profile."
+  },
+  {
+   "pkg": "no.tv2.sumo",
+   "reason": "Never-disabled list of the sharp-4k-googletv tv-tweak profile."
+  }
+ ],
+ "packages": {
+  "com.acer.android.tv.about": {
+   "tier": "cruft",
+   "risk": "safe",
+   "label": "Acer About/Registration",
+   "desc": "About/registration stub seen on Acer smart TVs.",
+   "source": "community"
+  },
+  "com.acer.tvhelper": {
+   "tier": "vendor",
+   "risk": "safe",
+   "label": "Acer TV Helper",
+   "desc": "Acer-brand helper app (mock/community entry - check the details before disabling).",
+   "source": "community"
+  },
+  "com.amazon.aca": {
+   "tier": "ads",
+   "risk": "safe",
+   "desc": "ACR companion: HDMI watcher + activity switch watcher, 15 MB",
+   "source": "tv-tweak:firetv-stick-hd"
+  },
+  "com.amazon.alexa.datastore.app": {
+   "tier": "assistant",
+   "risk": "caution",
+   "desc": "20 MB",
+   "source": "tv-tweak:firetv-stick-hd"
+  },
+  "com.amazon.alexa.externalmediaplayer.fireos": {
+   "tier": "assistant",
+   "risk": "caution",
+   "desc": "Flagged by the tv-tweak profile for this device family.",
+   "source": "tv-tweak:firetv-stick-hd"
+  },
+  "com.amazon.alexadirectivebrokerservice": {
+   "tier": "assistant",
+   "risk": "caution",
+   "desc": "Flagged by the tv-tweak profile for this device family.",
+   "source": "tv-tweak:firetv-stick-hd"
+  },
+  "com.amazon.alexamediaplayer.runtime.ftv": {
+   "tier": "assistant",
+   "risk": "caution",
+   "desc": "21 MB",
+   "source": "tv-tweak:firetv-stick-hd"
+  },
+  "com.amazon.amazonvideo.livingroom": {
+   "tier": "streaming",
+   "risk": "safe",
+   "desc": "Preinstalled Amazon Prime Video (com.amazon.amazonvideo.livingroom, NOT firebat).",
+   "source": "community",
+   "label": "Prime Video"
+  },
+  "com.amazon.audiohome": {
+   "tier": "cruft",
+   "risk": "safe",
+   "desc": "Flagged by the tv-tweak profile for this device family.",
+   "source": "tv-tweak:firetv-stick-hd"
+  },
+  "com.amazon.bueller.music": {
+   "tier": "promo",
+   "risk": "safe",
+   "desc": "Flagged by the tv-tweak profile for this device family.",
+   "source": "tv-tweak:firetv-stick-hd"
+  },
+  "com.amazon.bueller.photos": {
+   "tier": "promo",
+   "risk": "safe",
+   "desc": "Amazon Photos, 27 MB",
+   "source": "tv-tweak:firetv-stick-hd"
+  },
+  "com.amazon.ceviche": {
+   "tier": "vendor",
+   "risk": "expert",
+   "desc": "remote config + metrics delivery, 13 MB",
+   "source": "tv-tweak:firetv-stick-hd"
+  },
+  "com.amazon.client.metrics": {
+   "tier": "ads",
+   "risk": "safe",
+   "desc": "16 MB [Fire OS refuses to disable this package for the shell user - block it via router/DNS instead.]",
+   "source": "tv-tweak:firetv-stick-hd",
+   "blocked": true
+  },
+  "com.amazon.cloud9": {
+   "tier": "vendor",
+   "risk": "expert",
+   "desc": "Silk browser, 45 MB — only after TV Bro is installed",
+   "source": "tv-tweak:firetv-stick-hd"
+  },
+  "com.amazon.device.crashmanager": {
+   "tier": "ads",
+   "risk": "safe",
+   "desc": "Flagged by the tv-tweak profile for this device family. [Fire OS refuses to disable this package for the shell user - block it via router/DNS instead.]",
+   "source": "tv-tweak:firetv-stick-hd",
+   "blocked": true
+  },
+  "com.amazon.device.logmanager": {
+   "tier": "ads",
+   "risk": "safe",
+   "desc": "Flagged by the tv-tweak profile for this device family. [Fire OS refuses to disable this package for the shell user - block it via router/DNS instead.]",
+   "source": "tv-tweak:firetv-stick-hd",
+   "blocked": true
+  },
+  "com.amazon.device.metrics": {
+   "tier": "ads",
+   "risk": "safe",
+   "desc": "Flagged by the tv-tweak profile for this device family. [Fire OS refuses to disable this package for the shell user - block it via router/DNS instead.]",
+   "source": "tv-tweak:firetv-stick-hd",
+   "blocked": true
+  },
+  "com.amazon.device.software.ota": {
+   "tier": "ota",
+   "risk": "safe",
+   "desc": "31 MB, still runs; OTA must be blocked at DNS [Fire OS refuses to disable this package for the shell user - block it via router/DNS instead.]",
+   "source": "tv-tweak:firetv-stick-hd",
+   "blocked": true
+  },
+  "com.amazon.device.software.ota.override": {
+   "tier": "ota",
+   "risk": "safe",
+   "desc": "Flagged by the tv-tweak profile for this device family. [Fire OS refuses to disable this package for the shell user - block it via router/DNS instead.]",
+   "source": "tv-tweak:firetv-stick-hd",
+   "blocked": true
+  },
+  "com.amazon.device.sync": {
+   "tier": "core",
+   "risk": "unsafe",
+   "desc": "Flagged by the tv-tweak profile for this device family. [Fire OS refuses to disable this package for the shell user - block it via router/DNS instead.]",
+   "source": "tv-tweak:firetv-stick-hd",
+   "blocked": true
+  },
+  "com.amazon.device.sync.sdk.internal": {
+   "tier": "core",
+   "risk": "unsafe",
+   "desc": "Flagged by the tv-tweak profile for this device family. [Fire OS refuses to disable this package for the shell user - block it via router/DNS instead.]",
+   "source": "tv-tweak:firetv-stick-hd",
+   "blocked": true
+  },
+  "com.amazon.device.telemetry.emitter": {
+   "tier": "ads",
+   "risk": "safe",
+   "desc": "Flagged by the tv-tweak profile for this device family.",
+   "source": "tv-tweak:firetv-stick-hd"
+  },
+  "com.amazon.dp.logger": {
+   "tier": "ads",
+   "risk": "safe",
+   "desc": "Flagged by the tv-tweak profile for this device family.",
+   "source": "tv-tweak:firetv-stick-hd"
+  },
+  "com.amazon.dummy.alarmclock": {
+   "tier": "cruft",
+   "risk": "safe",
+   "desc": "Flagged by the tv-tweak profile for this device family.",
+   "source": "tv-tweak:firetv-stick-hd"
+  },
+  "com.amazon.dummy.calendar": {
+   "tier": "cruft",
+   "risk": "safe",
+   "desc": "Flagged by the tv-tweak profile for this device family.",
+   "source": "tv-tweak:firetv-stick-hd"
+  },
+  "com.amazon.dummy.contacts": {
+   "tier": "cruft",
+   "risk": "safe",
+   "desc": "Flagged by the tv-tweak profile for this device family.",
+   "source": "tv-tweak:firetv-stick-hd"
+  },
+  "com.amazon.dummy.gallery": {
+   "tier": "cruft",
+   "risk": "safe",
+   "desc": "Flagged by the tv-tweak profile for this device family.",
+   "source": "tv-tweak:firetv-stick-hd"
+  },
+  "com.amazon.dummy.music": {
+   "tier": "cruft",
+   "risk": "safe",
+   "desc": "Flagged by the tv-tweak profile for this device family.",
+   "source": "tv-tweak:firetv-stick-hd"
+  },
+  "com.amazon.dummy.settings": {
+   "tier": "cruft",
+   "risk": "safe",
+   "desc": "Flagged by the tv-tweak profile for this device family.",
+   "source": "tv-tweak:firetv-stick-hd"
+  },
+  "com.amazon.dummy.soundpicker": {
+   "tier": "cruft",
+   "risk": "safe",
+   "desc": "Flagged by the tv-tweak profile for this device family.",
+   "source": "tv-tweak:firetv-stick-hd"
+  },
+  "com.amazon.firetv.troubleshooting": {
+   "tier": "cruft",
+   "risk": "safe",
+   "desc": "Flagged by the tv-tweak profile for this device family.",
+   "source": "tv-tweak:firetv-stick-hd"
+  },
+  "com.amazon.ftv.screensaver": {
+   "tier": "promo",
+   "risk": "safe",
+   "desc": "Flagged by the tv-tweak profile for this device family.",
+   "source": "tv-tweak:firetv-stick-hd"
+  },
+  "com.amazon.ftvads.deeplinking": {
+   "tier": "ads",
+   "risk": "safe",
+   "desc": "Flagged by the tv-tweak profile for this device family. [Fire OS refuses to disable this package for the shell user - block it via router/DNS instead.]",
+   "source": "tv-tweak:firetv-stick-hd",
+   "blocked": true
+  },
+  "com.amazon.gamehub": {
+   "tier": "promo",
+   "risk": "safe",
+   "desc": "Flagged by the tv-tweak profile for this device family.",
+   "source": "tv-tweak:firetv-stick-hd"
+  },
+  "com.amazon.hybridadidservice": {
+   "tier": "ads",
+   "risk": "safe",
+   "desc": "advertising ID",
+   "source": "tv-tweak:firetv-stick-hd"
+  },
+  "com.amazon.imp": {
+   "tier": "vendor",
+   "risk": "expert",
+   "desc": "install manager; disabling stops Appstore installs",
+   "source": "tv-tweak:firetv-stick-hd"
+  },
+  "com.amazon.media.recommendations": {
+   "tier": "promo",
+   "risk": "safe",
+   "desc": "Flagged by the tv-tweak profile for this device family.",
+   "source": "tv-tweak:firetv-stick-hd"
+  },
+  "com.amazon.minitv.android.app": {
+   "tier": "promo",
+   "risk": "safe",
+   "desc": "Flagged by the tv-tweak profile for this device family.",
+   "source": "tv-tweak:firetv-stick-hd"
+  },
+  "com.amazon.ods.kindleconnect": {
+   "tier": "cruft",
+   "risk": "safe",
+   "desc": "Flagged by the tv-tweak profile for this device family.",
+   "source": "tv-tweak:firetv-stick-hd"
+  },
+  "com.amazon.perfc": {
+   "tier": "ads",
+   "risk": "safe",
+   "desc": "Flagged by the tv-tweak profile for this device family.",
+   "source": "tv-tweak:firetv-stick-hd"
+  },
+  "com.amazon.perfcollection": {
+   "tier": "ads",
+   "risk": "safe",
+   "desc": "Flagged by the tv-tweak profile for this device family.",
+   "source": "tv-tweak:firetv-stick-hd"
+  },
+  "com.amazon.shoptv.client": {
+   "tier": "promo",
+   "risk": "safe",
+   "desc": "Flagged by the tv-tweak profile for this device family.",
+   "source": "tv-tweak:firetv-stick-hd"
+  },
+  "com.amazon.shoptv.firetv.client": {
+   "tier": "promo",
+   "risk": "safe",
+   "desc": "Flagged by the tv-tweak profile for this device family.",
+   "source": "tv-tweak:firetv-stick-hd"
+  },
+  "com.amazon.smarthomemapviewapp": {
+   "tier": "vendor",
+   "risk": "caution",
+   "desc": "Flagged by the tv-tweak profile for this device family.",
+   "source": "tv-tweak:firetv-stick-hd"
+  },
+  "com.amazon.sneakpeek": {
+   "tier": "promo",
+   "risk": "safe",
+   "desc": "autoplaying trailers on the home row",
+   "source": "tv-tweak:firetv-stick-hd"
+  },
+  "com.amazon.storm.lightning.tutorial": {
+   "tier": "cruft",
+   "risk": "safe",
+   "desc": "Flagged by the tv-tweak profile for this device family.",
+   "source": "tv-tweak:firetv-stick-hd"
+  },
+  "com.amazon.systemnotices": {
+   "tier": "cruft",
+   "risk": "safe",
+   "desc": "Flagged by the tv-tweak profile for this device family.",
+   "source": "tv-tweak:firetv-stick-hd"
+  },
+  "com.amazon.tahoe": {
+   "tier": "cruft",
+   "risk": "safe",
+   "desc": "kids mode, 8.6 MB",
+   "source": "tv-tweak:firetv-stick-hd"
+  },
+  "com.amazon.tmm.tutorial": {
+   "tier": "cruft",
+   "risk": "safe",
+   "desc": "Flagged by the tv-tweak profile for this device family.",
+   "source": "tv-tweak:firetv-stick-hd"
+  },
+  "com.amazon.tv.acr": {
+   "tier": "ads",
+   "risk": "safe",
+   "desc": "automatic content recognition",
+   "source": "tv-tweak:firetv-stick-hd"
+  },
+  "com.amazon.tv.alexaalerts": {
+   "tier": "assistant",
+   "risk": "caution",
+   "desc": "Flagged by the tv-tweak profile for this device family.",
+   "source": "tv-tweak:firetv-stick-hd"
+  },
+  "com.amazon.tv.alexanotifications": {
+   "tier": "assistant",
+   "risk": "caution",
+   "desc": "Flagged by the tv-tweak profile for this device family.",
+   "source": "tv-tweak:firetv-stick-hd"
+  },
+  "com.amazon.tv.csapp": {
+   "tier": "core",
+   "risk": "unsafe",
+   "desc": "Flagged by the tv-tweak profile for this device family. [Fire OS refuses to disable this package for the shell user - block it via router/DNS instead.]",
+   "source": "tv-tweak:firetv-stick-hd",
+   "blocked": true
+  },
+  "com.amazon.tv.easyupgrade": {
+   "tier": "ota",
+   "risk": "expert",
+   "desc": "Flagged by the tv-tweak profile for this device family.",
+   "source": "tv-tweak:firetv-stick-hd"
+  },
+  "com.amazon.tv.ffsprovisioneeclient": {
+   "tier": "vendor",
+   "risk": "caution",
+   "desc": "Flagged by the tv-tweak profile for this device family.",
+   "source": "tv-tweak:firetv-stick-hd"
+  },
+  "com.amazon.tv.forcedotaupdater.v2": {
+   "tier": "ota",
+   "risk": "expert",
+   "desc": "Flagged by the tv-tweak profile for this device family.",
+   "source": "tv-tweak:firetv-stick-hd"
+  },
+  "com.amazon.tv.ftvambient": {
+   "tier": "promo",
+   "risk": "safe",
+   "desc": "ambient screensaver, 104 MB — largest single win",
+   "source": "tv-tweak:firetv-stick-hd"
+  },
+  "com.amazon.tv.legal.notices": {
+   "tier": "cruft",
+   "risk": "safe",
+   "desc": "5.7 MB",
+   "source": "tv-tweak:firetv-stick-hd"
+  },
+  "com.amazon.tv.livetv": {
+   "tier": "promo",
+   "risk": "safe",
+   "desc": "Flagged by the tv-tweak profile for this device family.",
+   "source": "tv-tweak:firetv-stick-hd"
+  },
+  "com.amazon.tv.matter": {
+   "tier": "vendor",
+   "risk": "caution",
+   "desc": "Flagged by the tv-tweak profile for this device family.",
+   "source": "tv-tweak:firetv-stick-hd"
+  },
+  "com.amazon.tv.mattercohost": {
+   "tier": "vendor",
+   "risk": "caution",
+   "desc": "Flagged by the tv-tweak profile for this device family.",
+   "source": "tv-tweak:firetv-stick-hd"
+  },
+  "com.amazon.tv.notificationcenter": {
+   "tier": "cruft",
+   "risk": "safe",
+   "desc": "Flagged by the tv-tweak profile for this device family.",
+   "source": "tv-tweak:firetv-stick-hd"
+  },
+  "com.amazon.tv.parentalcontrols": {
+   "tier": "core",
+   "risk": "unsafe",
+   "desc": "Flagged by the tv-tweak profile for this device family. [Fire OS refuses to disable this package for the shell user - block it via router/DNS instead.]",
+   "source": "tv-tweak:firetv-stick-hd",
+   "blocked": true
+  },
+  "com.amazon.tv.releasenotes": {
+   "tier": "cruft",
+   "risk": "safe",
+   "desc": "Flagged by the tv-tweak profile for this device family.",
+   "source": "tv-tweak:firetv-stick-hd"
+  },
+  "com.amazon.tv.support": {
+   "tier": "cruft",
+   "risk": "safe",
+   "desc": "Flagged by the tv-tweak profile for this device family.",
+   "source": "tv-tweak:firetv-stick-hd"
+  },
+  "com.amazon.tv.website_launcher": {
+   "tier": "promo",
+   "risk": "safe",
+   "desc": "Flagged by the tv-tweak profile for this device family.",
+   "source": "tv-tweak:firetv-stick-hd"
+  },
+  "com.amazon.uxnotification": {
+   "tier": "cruft",
+   "risk": "safe",
+   "desc": "Flagged by the tv-tweak profile for this device family.",
+   "source": "tv-tweak:firetv-stick-hd"
+  },
+  "com.amazon.vizzini": {
+   "tier": "assistant",
+   "risk": "caution",
+   "desc": "47 MB",
+   "source": "tv-tweak:firetv-stick-hd"
+  },
+  "com.amazon.whad": {
+   "tier": "vendor",
+   "risk": "caution",
+   "desc": "15 MB",
+   "source": "tv-tweak:firetv-stick-hd"
+  },
+  "com.amazon.whasettings": {
+   "tier": "vendor",
+   "risk": "caution",
+   "desc": "Flagged by the tv-tweak profile for this device family.",
+   "source": "tv-tweak:firetv-stick-hd"
+  },
+  "com.amazon.whisperjoin.middleware.v2.np": {
+   "tier": "vendor",
+   "risk": "caution",
+   "desc": "9.7 MB",
+   "source": "tv-tweak:firetv-stick-hd"
+  },
+  "com.amazon.wirelessmetrics.service": {
+   "tier": "ads",
+   "risk": "safe",
+   "desc": "Flagged by the tv-tweak profile for this device family.",
+   "source": "tv-tweak:firetv-stick-hd"
+  },
+  "com.android.adservices.api": {
+   "tier": "ads",
+   "risk": "safe",
+   "desc": "Android's advertising/Privacy Sandbox APIs.",
+   "source": "tvtweak",
+   "label": "Privacy Sandbox API"
+  },
+  "com.android.captiveportallogin": {
+   "tier": "cruft",
+   "risk": "expert",
+   "label": "Captive Portal Login",
+   "desc": "The popup/screen used to log into hotel or public Wi-Fi with a web portal. Keep unless you never use such networks.",
+   "source": "skinny-bravia"
+  },
+  "com.android.devicehealthchecks": {
+   "tier": "ads",
+   "risk": "caution",
+   "label": "Device Health Checks",
+   "desc": "Crash/diagnostics reporter.",
+   "source": "community"
+  },
+  "com.android.dreams.basic": {
+   "tier": "promo",
+   "risk": "safe",
+   "label": "Basic Dreams",
+   "desc": "AOSP screensaver (Daydream).",
+   "source": "skinny-bravia"
+  },
+  "com.android.dreams.phototable": {
+   "tier": "promo",
+   "risk": "safe",
+   "label": "Photo Table Screensaver",
+   "desc": "Screensaver showing a photo table.",
+   "source": "community"
+  },
+  "com.android.dynsystem": {
+   "tier": "ota",
+   "risk": "expert",
+   "desc": "Installs dynamic system updates (GSI testing). Not needed for normal use.",
+   "source": "tvtweak",
+   "label": "Dynamic System Update"
+  },
+  "com.android.emulator.radio.tuneaway": {
+   "tier": "vendor",
+   "risk": "expert",
+   "label": "TuneAway",
+   "desc": "Vendor tuner helper (some devices).",
+   "source": "community"
+  },
+  "com.android.federatedcompute.services": {
+   "tier": "ads",
+   "risk": "safe",
+   "desc": "Federated learning for ads.",
+   "source": "tvtweak",
+   "label": "Federated Compute"
+  },
+  "com.android.location.fused": {
+   "tier": "core",
+   "risk": "unsafe",
+   "label": "Fused Location Provider",
+   "desc": "Part of the location stack. Disabling it sends many TVs into a boot loop. Never touch.",
+   "source": "community"
+  },
+  "com.android.ondevicepersonalization.services": {
+   "tier": "ads",
+   "risk": "safe",
+   "desc": "Advertising personalization engine.",
+   "source": "tvtweak",
+   "label": "On-Device Personalization"
+  },
+  "com.android.printspooler": {
+   "tier": "cruft",
+   "risk": "safe",
+   "label": "Print Spooler",
+   "desc": "Printing service - nobody prints from a TV.",
+   "source": "uad/skinny-bravia"
+  },
+  "com.android.providers.calendar": {
+   "tier": "cruft",
+   "risk": "caution",
+   "label": "Calendar Provider",
+   "desc": "Calendar data provider - no real use on a TV.",
+   "source": "skinny-bravia"
+  },
+  "com.android.providers.contacts": {
+   "tier": "cruft",
+   "risk": "caution",
+   "label": "Contacts Provider",
+   "desc": "Contacts storage - no real use on a TV.",
+   "source": "skinny-bravia"
+  },
+  "com.android.providers.userdictionary": {
+   "tier": "cruft",
+   "risk": "safe",
+   "label": "User Dictionary",
+   "desc": "Personal dictionary provider.",
+   "source": "skinny-bravia"
+  },
+  "com.android.settings.intelligence": {
+   "tier": "cruft",
+   "risk": "caution",
+   "label": "Settings Intelligence",
+   "desc": "Search ranking for Settings (AOSP).",
+   "source": "skinny-bravia"
+  },
+  "com.android.traceur": {
+   "tier": "cruft",
+   "risk": "safe",
+   "label": "System Tracing",
+   "desc": "Developer tracing tool.",
+   "source": "community"
+  },
+  "com.android.tv.feedbackconsent": {
+   "tier": "ads",
+   "risk": "safe",
+   "desc": "Feedback/consent dialog used for telemetry.",
+   "source": "tvslim",
+   "label": "Android TV Consent"
+  },
+  "com.android.vpndialogs": {
+   "tier": "cruft",
+   "risk": "expert",
+   "label": "VPN Dialogs",
+   "desc": "VPN configuration dialogs. Needed if you ever use a VPN on the TV.",
+   "source": "skinny-bravia"
+  },
+  "com.android.wallpaperbackup": {
+   "tier": "cruft",
+   "risk": "safe",
+   "label": "Wallpaper Backup",
+   "desc": "Wallpaper backup service.",
+   "source": "skinny-bravia"
+  },
+  "com.apple.atve.androidtv.appletv": {
+   "tier": "streaming",
+   "risk": "safe",
+   "label": "Apple TV",
+   "desc": "Preinstalled Apple TV app.",
+   "source": "community"
+  },
+  "com.disney.disneyplus": {
+   "tier": "streaming",
+   "risk": "safe",
+   "label": "Disney+",
+   "desc": "Preinstalled Disney+.",
+   "source": "community"
+  },
+  "com.fireos.usagestats.proxy": {
+   "tier": "ads",
+   "risk": "safe",
+   "desc": "Flagged by the tv-tweak profile for this device family. [Fire OS refuses to disable this package for the shell user - block it via router/DNS instead.]",
+   "source": "tv-tweak:firetv-stick-hd",
+   "blocked": true
+  },
+  "com.google.android.apps.chromecast.app": {
+   "tier": "cast",
+   "risk": "caution",
+   "label": "Google Home app",
+   "desc": "Setup/companion app for casting.",
+   "source": "community"
+  },
+  "com.google.android.apps.inputmethod.hindi": {
+   "tier": "cruft",
+   "risk": "safe",
+   "label": "Hindi Keyboard",
+   "desc": "Extra Gboard language pack - pointless on a television. Never disable the Latin/Gboard keyboard itself.",
+   "source": "tvslim"
+  },
+  "com.google.android.apps.inputmethod.zhuyin": {
+   "tier": "cruft",
+   "risk": "safe",
+   "label": "Zhuyin Keyboard",
+   "desc": "Extra keyboard language pack - pointless on a television.",
+   "source": "tvslim"
+  },
+  "com.google.android.apps.mediashell": {
+   "tier": "cast",
+   "risk": "caution",
+   "desc": "Chromecast receiver - phones can no longer cast to the TV when disabled.",
+   "source": "toolkit",
+   "label": "Chromecast Built-in"
+  },
+  "com.google.android.apps.tv.dreamx": {
+   "tier": "promo",
+   "risk": "caution",
+   "label": "Google TV Ambient (DreamX)",
+   "desc": "Google TV ambient mode screensaver (the one with 'sneak peek' ads of shows). Disabling leaves a plain clock/black screen. Some find it makes home quieter; also removes an animated surface.",
+   "source": "community"
+  },
+  "com.google.android.apps.tv.launcherx": {
+   "tier": "core",
+   "risk": "expert",
+   "label": "Google TV Home (LauncherX)",
+   "desc": "Google TV home screen (the one full of ad rows). Expert action: install FLauncher/Projectivy, set it as default, then disable this. The tool refuses if no replacement launcher is present.",
+   "source": "community"
+  },
+  "com.google.android.apps.youtube.kids": {
+   "tier": "streaming",
+   "risk": "safe",
+   "label": "YouTube Kids",
+   "desc": "Preinstalled YouTube Kids.",
+   "source": "community"
+  },
+  "com.google.android.backdrop": {
+   "tier": "promo",
+   "risk": "safe",
+   "label": "Google Backdrop",
+   "desc": "The preinstalled Google screensaver / picture-frame service.",
+   "source": "skinny-bravia"
+  },
+  "com.google.android.backuptransport": {
+   "tier": "cruft",
+   "risk": "safe",
+   "label": "Backup Transport",
+   "desc": "Google backup transport - TV apps rarely back up anything useful.",
+   "source": "uad/skinny-bravia"
+  },
+  "com.google.android.feedback": {
+   "tier": "ads",
+   "risk": "safe",
+   "label": "Google Feedback",
+   "desc": "Uploads crash reports / feedback to Google.",
+   "source": "tvtweak/skinny-bravia"
+  },
+  "com.google.android.inputmethod.japanese": {
+   "tier": "cruft",
+   "risk": "safe",
+   "label": "Japanese Keyboard",
+   "desc": "Extra keyboard language pack - pointless on a television.",
+   "source": "tvslim"
+  },
+  "com.google.android.inputmethod.pinyin": {
+   "tier": "cruft",
+   "risk": "safe",
+   "label": "Pinyin Keyboard",
+   "desc": "Extra keyboard language pack - pointless on a television.",
+   "source": "tvslim"
+  },
+  "com.google.android.katniss": {
+   "tier": "assistant",
+   "risk": "caution",
+   "label": "Google Assistant (Katniss)",
+   "desc": "Google Assistant / voice search on Android TV. Mic button on the remote stops working.",
+   "source": "skinny-bravia/tvtweak"
+  },
+  "com.google.android.leanbacklauncher": {
+   "tier": "core",
+   "risk": "expert",
+   "label": "Android TV Home (Leanback)",
+   "desc": "The old Android TV home screen. Expert action: install FLauncher/Projectivy, set it as default, then disable this. The tool refuses if no replacement launcher is present.",
+   "source": "community"
+  },
+  "com.google.android.leanbacklauncher.recommendations": {
+   "tier": "promo",
+   "risk": "caution",
+   "label": "Leanback Recommendations",
+   "desc": "Promotional content rows in the older (Leanback) Android TV launcher.",
+   "source": "toolkit"
+  },
+  "com.google.android.marvin.talkback": {
+   "tier": "accessibility",
+   "risk": "expert",
+   "label": "TalkBack",
+   "desc": "Screen reader for blind users. Only disable if you never use accessibility features.",
+   "source": "community"
+  },
+  "com.google.android.onetimeinitializer": {
+   "tier": "cruft",
+   "risk": "safe",
+   "label": "One Time Initializer",
+   "desc": "First-boot initialization - safe after setup.",
+   "source": "uad"
+  },
+  "com.google.android.partnersetup": {
+   "tier": "ads",
+   "risk": "safe",
+   "label": "Google Partner Setup",
+   "desc": "OEM partner hooks; only needed during first-run setup.",
+   "source": "tvtweak"
+  },
+  "com.google.android.play.games": {
+   "tier": "games",
+   "risk": "safe",
+   "label": "Google Play Games",
+   "desc": "Google Play Games - pointless on a TV.",
+   "source": "uad/tvtweak"
+  },
+  "com.google.android.sss.authbridge": {
+   "tier": "cruft",
+   "risk": "caution",
+   "label": "SSS Authbridge",
+   "desc": "Google authentication bridge (setup-related).",
+   "source": "skinny-bravia"
+  },
+  "com.google.android.syncadapters.calendar": {
+   "tier": "cruft",
+   "risk": "caution",
+   "label": "Calendar Sync",
+   "desc": "Google Calendar sync - useless on a TV.",
+   "source": "uad/skinny-bravia"
+  },
+  "com.google.android.syncadapters.contacts": {
+   "tier": "cruft",
+   "risk": "caution",
+   "label": "Contacts Sync",
+   "desc": "Google Contacts sync - useless on a TV.",
+   "source": "uad/skinny-bravia"
+  },
+  "com.google.android.tts": {
+   "tier": "accessibility",
+   "risk": "expert",
+   "label": "Speech Services (TTS)",
+   "desc": "Text-to-speech engine. Some apps use it for spoken feedback.",
+   "source": "community"
+  },
+  "com.google.android.tungsten.setupwraith": {
+   "tier": "cruft",
+   "risk": "caution",
+   "label": "Tungsten SetupWraith",
+   "desc": "Google TV setup wizard. Keeps re-running setup; community disables it alongside the stock launcher when using a custom one (it can re-enable launcherx). Only if your TV is fully set up.",
+   "source": "community"
+  },
+  "com.google.android.tv.ads": {
+   "tier": "ads",
+   "risk": "safe",
+   "label": "Google TV Ads",
+   "desc": "Serves the advertising/sponsored tiles in the Google TV launcher.",
+   "source": "community"
+  },
+  "com.google.android.tv.ads.icons": {
+   "tier": "ads",
+   "risk": "safe",
+   "label": "Google TV Ads Icons",
+   "desc": "Icon assets for the ad tiles.",
+   "source": "community"
+  },
+  "com.google.android.tv.bugreportsender": {
+   "tier": "ads",
+   "risk": "safe",
+   "label": "TV Bug Report Sender",
+   "desc": "Sends TV bug reports to Google.",
+   "source": "skinny-bravia"
+  },
+  "com.google.android.tv.remote": {
+   "tier": "google_misc",
+   "risk": "safe",
+   "label": "TV Remote App",
+   "desc": "Companion remote app (only relevant on phones).",
+   "source": "uad"
+  },
+  "com.google.android.tvlauncher": {
+   "tier": "core",
+   "risk": "expert",
+   "label": "Android TV Home",
+   "desc": "Standard Android TV home screen. Expert action: install and set an alternative launcher first. The tool refuses if no replacement is present.",
+   "source": "community"
+  },
+  "com.google.android.tvrecommendations": {
+   "tier": "promo",
+   "risk": "caution",
+   "label": "TV Recommendations",
+   "desc": "Feeds the recommendation rows of the Android TV home screen. Disabling empties those rows; on some launcher versions the launcher can look odd. Reversible with pm enable.",
+   "source": "tvslim/toolkit"
+  },
+  "com.google.android.videos": {
+   "tier": "google_misc",
+   "risk": "safe",
+   "label": "Google TV (Movies & TV)",
+   "desc": "Google's video store app (previously Google Play Movies & TV).",
+   "source": "uad/skinny-bravia"
+  },
+  "com.google.android.voicesearch.tv": {
+   "tier": "assistant",
+   "risk": "caution",
+   "label": "Voice Search TV",
+   "desc": "Voice search service. Voice search stops working if disabled.",
+   "source": "community"
+  },
+  "com.google.android.webview": {
+   "tier": "core",
+   "risk": "unsafe",
+   "label": "Android System WebView",
+   "desc": "Web rendering engine used by many apps. Disabling breaks them.",
+   "source": "community"
+  },
+  "com.google.android.youtube.tv": {
+   "tier": "streaming",
+   "risk": "caution",
+   "label": "YouTube",
+   "desc": "Preinstalled YouTube. Disable only if you use an alternative (e.g. SmartTube).",
+   "source": "community"
+  },
+  "com.google.android.youtube.tvmusic": {
+   "tier": "google_misc",
+   "risk": "safe",
+   "desc": "YouTube Music for Android TV. Disable only if you don't use it.",
+   "source": "tvtweak",
+   "label": "YouTube Music TV"
+  },
+  "com.hotstar.tv.shared": {
+   "tier": "vendor",
+   "risk": "safe",
+   "label": "Hotstar shared library",
+   "desc": "Shared library used by Hotstar apps.",
+   "source": "community"
+  },
+  "com.jio.media.jiobot": {
+   "tier": "vendor",
+   "risk": "caution",
+   "label": "Jio Services (India)",
+   "desc": "Jio TV/platform services seen on Indian smart TVs (JioTV+, JioHome).",
+   "source": "community"
+  },
+  "com.liskovsoft.smarttubetv.beta": {
+   "tier": "streaming",
+   "risk": "safe",
+   "label": "SmartTube",
+   "desc": "Ad-free YouTube client for Android TV.",
+   "source": "user-app"
+  },
+  "com.mediatek.dialservice": {
+   "tier": "cast",
+   "risk": "caution",
+   "desc": "DIAL discovery for YouTube/Netflix casting",
+   "source": "tv-tweak:sharp-4k-googletv"
+  },
+  "com.mediatek.miracast": {
+   "tier": "cast",
+   "risk": "caution",
+   "desc": "Flagged by the tv-tweak profile for this device family.",
+   "source": "tv-tweak:sharp-4k-googletv"
+  },
+  "com.mediatek.tv.retaildemo": {
+   "tier": "promo",
+   "risk": "safe",
+   "desc": "shop-floor demo loop",
+   "source": "tv-tweak:sharp-4k-googletv"
+  },
+  "com.mediatek.tv.systemupdater": {
+   "tier": "ota",
+   "risk": "expert",
+   "desc": "vendor firmware updater; Play/GMS updates are not affected",
+   "source": "tv-tweak:sharp-4k-googletv"
+  },
+  "com.mediatek.wwtv.mediaplayer": {
+   "tier": "streaming",
+   "risk": "safe",
+   "label": "MediaTek Media Player",
+   "desc": "Built-in media player for USB/network files.",
+   "source": "community"
+  },
+  "com.mtc.emanual": {
+   "tier": "cruft",
+   "risk": "safe",
+   "desc": "on-screen manual",
+   "source": "tv-tweak:sharp-4k-googletv"
+  },
+  "com.mtc.uploadcsr": {
+   "tier": "ads",
+   "risk": "safe",
+   "desc": "vendor crash/usage report uploader",
+   "source": "tv-tweak:sharp-4k-googletv"
+  },
+  "com.netflix.ninja": {
+   "tier": "streaming",
+   "risk": "safe",
+   "label": "Netflix",
+   "desc": "Preinstalled Netflix. Disable if you don't use it - re-enable any time.",
+   "source": "community"
+  },
+  "com.netflix.tokenmanager": {
+   "tier": "vendor",
+   "risk": "caution",
+   "label": "Netflix Token Manager",
+   "desc": "Netflix companion/login service. Usually only needed together with the Netflix app.",
+   "source": "community"
+  },
+  "com.plexapp.android": {
+   "tier": "streaming",
+   "risk": "safe",
+   "label": "Plex",
+   "desc": "Plex client.",
+   "source": "user-app"
+  },
+  "com.sony.dtv.b2b.hotelmode": {
+   "tier": "vendor",
+   "risk": "safe",
+   "label": "Sony Hotel Mode",
+   "desc": "Hotel mode tooling.",
+   "source": "skinny-bravia"
+  },
+  "com.sony.dtv.b2b.prosettings": {
+   "tier": "vendor",
+   "risk": "safe",
+   "label": "Sony Pro Settings",
+   "desc": "Business/hotel (B2B) settings.",
+   "source": "skinny-bravia"
+  },
+  "com.sony.dtv.b2b.rs232csupport": {
+   "tier": "vendor",
+   "risk": "safe",
+   "label": "Sony RS232 Support",
+   "desc": "Serial control for installations.",
+   "source": "skinny-bravia"
+  },
+  "com.sony.dtv.b2b.vendorprotocol": {
+   "tier": "vendor",
+   "risk": "caution",
+   "label": "Sony B2B Vendor Protocol",
+   "desc": "Business control protocol.",
+   "source": "skinny-bravia"
+  },
+  "com.sony.dtv.braviasyncservice": {
+   "tier": "vendor",
+   "risk": "caution",
+   "label": "Sony BRAVIA Sync Service",
+   "desc": "BRAVIA Sync (HDMI-CEC) runtime. Disabling breaks CEC control (one remote for TV + console).",
+   "source": "skinny-bravia"
+  },
+  "com.sony.dtv.braviasyncsetting": {
+   "tier": "vendor",
+   "risk": "caution",
+   "label": "Sony BRAVIA Sync Setting",
+   "desc": "HDMI-CEC config UI. Disabling breaks BRAVIA Sync setup screens.",
+   "source": "skinny-bravia"
+  },
+  "com.sony.dtv.browser.webappruntime": {
+   "tier": "vendor",
+   "risk": "caution",
+   "label": "Sony Browser WebApp Runtime",
+   "desc": "Web app runtime used by some Sony apps.",
+   "source": "skinny-bravia"
+  },
+  "com.sony.dtv.common.base.AccessibilityText": {
+   "tier": "accessibility",
+   "risk": "caution",
+   "label": "Sony Accessibility Text",
+   "desc": "Accessibility text service.",
+   "source": "skinny-bravia"
+  },
+  "com.sony.dtv.customersupport": {
+   "tier": "cruft",
+   "risk": "safe",
+   "label": "Sony Customer Support",
+   "desc": "Customer support app.",
+   "source": "skinny-bravia"
+  },
+  "com.sony.dtv.da.service": {
+   "tier": "cruft",
+   "risk": "caution",
+   "label": "Sony DA Service",
+   "desc": "Remote support/diagnostics.",
+   "source": "skinny-bravia"
+  },
+  "com.sony.dtv.demomode": {
+   "tier": "promo",
+   "risk": "safe",
+   "label": "Sony Demo Mode",
+   "desc": "Store demo loop.",
+   "source": "skinny-bravia"
+  },
+  "com.sony.dtv.demosupport": {
+   "tier": "promo",
+   "risk": "safe",
+   "label": "Sony Demo Support",
+   "desc": "Support service for demo mode.",
+   "source": "skinny-bravia"
+  },
+  "com.sony.dtv.discovery": {
+   "tier": "promo",
+   "risk": "safe",
+   "label": "Sony Discovery",
+   "desc": "Sony content recommendation service.",
+   "source": "skinny-bravia"
+  },
+  "com.sony.dtv.hbbtvlauncher": {
+   "tier": "vendor",
+   "risk": "safe",
+   "label": "Sony HbbTV Launcher",
+   "desc": "HbbTV (red-button) interface.",
+   "source": "skinny-bravia"
+  },
+  "com.sony.dtv.homenetwork": {
+   "tier": "vendor",
+   "risk": "caution",
+   "label": "Sony Home Network",
+   "desc": "DLNA/home network service. Disable if you don't stream from a NAS.",
+   "source": "skinny-bravia"
+  },
+  "com.sony.dtv.imanual": {
+   "tier": "cruft",
+   "risk": "safe",
+   "label": "Sony iManual",
+   "desc": "On-screen user manual.",
+   "source": "skinny-bravia"
+  },
+  "com.sony.dtv.interactivetvutil": {
+   "tier": "vendor",
+   "risk": "safe",
+   "label": "Sony Interactive TV Utility",
+   "desc": "Interactive TV (HbbTV) utility.",
+   "source": "skinny-bravia"
+  },
+  "com.sony.dtv.multiscreendemo": {
+   "tier": "promo",
+   "risk": "safe",
+   "label": "Sony Multi-Screen Demo",
+   "desc": "Retail multi-screen demo.",
+   "source": "skinny-bravia"
+  },
+  "com.sony.dtv.osat.music": {
+   "tier": "vendor",
+   "risk": "safe",
+   "label": "Sony OSAT Music",
+   "desc": "Sony's music player.",
+   "source": "skinny-bravia"
+  },
+  "com.sony.dtv.promos": {
+   "tier": "promo",
+   "risk": "safe",
+   "label": "Sony Promos",
+   "desc": "Promotional content.",
+   "source": "skinny-bravia"
+  },
+  "com.sony.dtv.reminderservice": {
+   "tier": "cruft",
+   "risk": "safe",
+   "label": "Sony Reminder Service",
+   "desc": "TV reminder service.",
+   "source": "skinny-bravia"
+  },
+  "com.sony.dtv.seconddispsetting": {
+   "tier": "vendor",
+   "risk": "expert",
+   "label": "Sony PiP Setting",
+   "desc": "Picture-in-picture service.",
+   "source": "skinny-bravia"
+  },
+  "com.sony.dtv.servicemode": {
+   "tier": "vendor",
+   "risk": "caution",
+   "label": "Sony Service Mode",
+   "desc": "Developer service mode. Removing the entry point is usually fine.",
+   "source": "skinny-bravia"
+  },
+  "com.sony.dtv.smarthelp": {
+   "tier": "cruft",
+   "risk": "safe",
+   "label": "Sony Smart Help",
+   "desc": "Help app.",
+   "source": "skinny-bravia"
+  },
+  "com.sony.dtv.smartmediaapp": {
+   "tier": "streaming",
+   "risk": "safe",
+   "label": "Sony Smart Media App",
+   "desc": "Sony's media player for USB/network files.",
+   "source": "skinny-bravia"
+  },
+  "com.sony.dtv.sonybugreportsys": {
+   "tier": "ads",
+   "risk": "safe",
+   "label": "Sony Bug Report",
+   "desc": "Bug report service.",
+   "source": "skinny-bravia"
+  },
+  "com.sony.dtv.sonyloglevelsettingsys": {
+   "tier": "cruft",
+   "risk": "safe",
+   "label": "Sony Log Settings (System)",
+   "desc": "System logging settings.",
+   "source": "skinny-bravia"
+  },
+  "com.sony.dtv.sonyloglevelsettingvnd": {
+   "tier": "cruft",
+   "risk": "safe",
+   "label": "Sony Log Settings (Vendor)",
+   "desc": "Vendor logging settings.",
+   "source": "skinny-bravia"
+  },
+  "com.sony.dtv.sonyselect": {
+   "tier": "promo",
+   "risk": "safe",
+   "label": "Sony Select",
+   "desc": "Sony content store row.",
+   "source": "skinny-bravia"
+  },
+  "com.sony.dtv.sonyselect.overlay": {
+   "tier": "promo",
+   "risk": "safe",
+   "label": "Sony Select Overlay",
+   "desc": "Overlay for Sony Select.",
+   "source": "skinny-bravia"
+  },
+  "com.sony.dtv.system.crashlog": {
+   "tier": "ads",
+   "risk": "safe",
+   "label": "Sony Crash Log",
+   "desc": "Crash report service.",
+   "source": "skinny-bravia"
+  },
+  "com.sony.dtv.tvxlauncher.programguide": {
+   "tier": "vendor",
+   "risk": "expert",
+   "label": "Sony TVX Program Guide",
+   "desc": "TV program guide - part of the TVX launcher on some Bravia models.",
+   "source": "skinny-bravia"
+  },
+  "com.sony.dtv.tvxlauncher.titlelist": {
+   "tier": "vendor",
+   "risk": "expert",
+   "label": "Sony TVX Title List",
+   "desc": "Recorded-programs list - part of the TVX launcher on some Bravia models.",
+   "source": "skinny-bravia"
+  },
+  "com.sony.dtv.videoframeserver": {
+   "tier": "vendor",
+   "risk": "caution",
+   "label": "Sony Video Frame Server",
+   "desc": "Frame rendering service - test carefully if you disable it.",
+   "source": "skinny-bravia"
+  },
+  "com.sony.dtv.youview": {
+   "tier": "vendor",
+   "risk": "safe",
+   "label": "Sony YouView",
+   "desc": "YouView (UK) integration.",
+   "source": "skinny-bravia"
+  },
+  "com.sonyliv": {
+   "tier": "streaming",
+   "risk": "safe",
+   "label": "SonyLIV",
+   "desc": "Preinstalled SonyLIV (India).",
+   "source": "community"
+  },
+  "com.spocky.projengmenu": {
+   "tier": "streaming",
+   "risk": "safe",
+   "label": "Projectivy Launcher",
+   "desc": "Alternative home screen with customization.",
+   "source": "user-app"
+  },
+  "com.spotify.tv.android": {
+   "tier": "streaming",
+   "risk": "safe",
+   "label": "Spotify TV",
+   "desc": "Preinstalled Spotify for TV.",
+   "source": "community"
+  },
+  "com.tcl.appmarket2": {
+   "tier": "vendor",
+   "risk": "safe",
+   "label": "TCL App Market",
+   "desc": "Third-party app store.",
+   "source": "toolkit"
+  },
+  "com.tcl.bootadservice": {
+   "tier": "ads",
+   "risk": "safe",
+   "label": "TCL Boot Ads",
+   "desc": "Displays advertisements during boot - a prime debloat target on TCL TVs.",
+   "source": "toolkit"
+  },
+  "com.tcl.browser": {
+   "tier": "vendor",
+   "risk": "safe",
+   "label": "TCL Browser",
+   "desc": "Built-in browser.",
+   "source": "toolkit"
+  },
+  "com.tcl.dashboard": {
+   "tier": "vendor",
+   "risk": "caution",
+   "label": "TCL Dashboard",
+   "desc": "Side-panel overlay; redundant with a custom launcher.",
+   "source": "toolkit"
+  },
+  "com.tcl.exhibit": {
+   "tier": "promo",
+   "risk": "safe",
+   "label": "TCL Exhibit",
+   "desc": "Store-exhibit/promo content app.",
+   "source": "community"
+  },
+  "com.tcl.gallery": {
+   "tier": "vendor",
+   "risk": "safe",
+   "label": "TCL Gallery",
+   "desc": "Built-in photo viewer.",
+   "source": "toolkit"
+  },
+  "com.tcl.guard": {
+   "tier": "vendor",
+   "risk": "caution",
+   "label": "TCL Guard (antivirus)",
+   "desc": "Background 'security' scanner consuming CPU/RAM.",
+   "source": "toolkit"
+  },
+  "com.tcl.microfilterservice": {
+   "tier": "vendor",
+   "risk": "expert",
+   "label": "TCL Micro Filter",
+   "desc": "Picture processing service. Leave alone unless you tested carefully.",
+   "source": "community"
+  },
+  "com.tcl.ocean.instructions": {
+   "tier": "cruft",
+   "risk": "safe",
+   "label": "TCL Ocean Instructions",
+   "desc": "TCL instruction/tutorial app.",
+   "source": "community"
+  },
+  "com.tcl.partnercustomizations": {
+   "tier": "vendor",
+   "risk": "caution",
+   "label": "TCL Partner Customizations",
+   "desc": "OEM/retailer customization hooks.",
+   "source": "community"
+  },
+  "com.tcl.tvplus": {
+   "tier": "streaming",
+   "risk": "safe",
+   "label": "TCL+ / TV+",
+   "desc": "TCL's ad-supported streaming app.",
+   "source": "community"
+  },
+  "com.tcl.videoplayer": {
+   "tier": "vendor",
+   "risk": "safe",
+   "label": "TCL Video Player",
+   "desc": "Built-in media player.",
+   "source": "toolkit"
+  },
+  "com.tcl.waterfall.overseas": {
+   "tier": "promo",
+   "risk": "safe",
+   "label": "TCL Recommendations (Waterfall)",
+   "desc": "TCL's recommendation/promo feed shown on the home screen.",
+   "source": "tvslim"
+  },
+  "com.vewd.core.integration.dia": {
+   "tier": "vendor",
+   "risk": "safe",
+   "label": "Vewd Browser",
+   "desc": "Preinstalled Vewd web browser.",
+   "source": "skinny-bravia"
+  },
+  "com.youview.tv.servicehost": {
+   "tier": "vendor",
+   "risk": "safe",
+   "label": "YouView Service Host",
+   "desc": "YouView host service (UK).",
+   "source": "skinny-bravia"
+  },
+  "fusion.android.tv.demo": {
+   "tier": "promo",
+   "risk": "safe",
+   "label": "Fusion TV Demo",
+   "desc": "Store demo package seen on some OEM TVs.",
+   "source": "community"
+  },
+  "in.startv.hotstar": {
+   "tier": "streaming",
+   "risk": "safe",
+   "label": "JioHotstar",
+   "desc": "Preinstalled JioHotstar (India).",
+   "source": "community"
+  },
+  "me.efesser.flauncher": {
+   "tier": "streaming",
+   "risk": "safe",
+   "label": "FLauncher",
+   "desc": "Alternative home screen (recommended replacement for the stock launcher).",
+   "source": "user-app"
+  },
+  "org.droidtv.ambisvc": {
+   "tier": "vendor",
+   "risk": "expert",
+   "label": "Philips Ambilight Service",
+   "desc": "Controls the Ambilight feature on Philips TVs. Disabling kills Ambilight.",
+   "source": "community"
+  },
+  "org.droidtv.android.fitness": {
+   "tier": "vendor",
+   "risk": "safe",
+   "label": "Philips Fitness",
+   "desc": "Preinstalled fitness app (Philips/TP Vision).",
+   "source": "community"
+  },
+  "org.droidtv.eum": {
+   "tier": "vendor",
+   "risk": "caution",
+   "label": "Philips EUM",
+   "desc": "Philips end-user-mode/config service. Review before disabling.",
+   "source": "community"
+  },
+  "org.obs.mhegservice": {
+   "tier": "cruft",
+   "risk": "safe",
+   "desc": "MHEG-5 interactive TV, UK/NZ only",
+   "source": "tv-tweak:sharp-4k-googletv"
+  },
+  "org.videolan.vlc": {
+   "tier": "streaming",
+   "risk": "safe",
+   "label": "VLC",
+   "desc": "VLC media player.",
+   "source": "user-app"
+  },
+  "org.xbmc.kodi": {
+   "tier": "streaming",
+   "risk": "safe",
+   "label": "Kodi",
+   "desc": "Kodi media center.",
+   "source": "user-app"
+  },
+  "screenmirroring.com": {
+   "tier": "vendor",
+   "risk": "caution",
+   "label": "Screen Mirroring",
+   "desc": "Miracast-style screen mirroring. Disabling breaks phone-to-TV mirroring.",
+   "source": "skinny-bravia"
+  },
+  "tv.anoki.acr.anokiacroptin": {
+   "tier": "ads",
+   "risk": "safe",
+   "desc": "automatic content recognition: fingerprints whatever is on screen",
+   "source": "tv-tweak:sharp-4k-googletv"
+  },
+  "tv.samba.ssm": {
+   "tier": "ads",
+   "risk": "safe",
+   "label": "Samba TV",
+   "desc": "Automatic content recognition: fingerprints everything shown on screen and reports it. Classic smart-TV privacy offender.",
+   "source": "skinny-bravia"
+  }
+ },
+ "vendors": {
+  "acer": {
+   "label": "Acer",
+   "match": [
+    "com.acer.",
+    "com.acer.tv",
+    "acer."
+   ]
+  },
+  "tcl": {
+   "label": "TCL",
+   "match": [
+    "com.tcl.",
+    "com.tcltv.",
+    "com.tcl_"
+   ]
+  },
+  "sony": {
+   "label": "Sony",
+   "match": [
+    "com.sony.",
+    "com.sonyericsson.",
+    "tv.samba"
+   ]
+  },
+  "xiaomi": {
+   "label": "Xiaomi",
+   "match": [
+    "com.xiaomi.",
+    "com.mitv.",
+    "com.miui.tv"
+   ]
+  },
+  "philips": {
+   "label": "Philips",
+   "match": [
+    "org.droidtv.",
+    "com.philips.",
+    "com.tpv."
+   ]
+  },
+  "hisense": {
+   "label": "Hisense",
+   "match": [
+    "com.hisense.",
+    "com.vidaa."
+   ]
+  },
+  "skyworth": {
+   "label": "Skyworth",
+   "match": [
+    "com.skyworth.",
+    "com.sky."
+   ]
+  },
+  "haier": {
+   "label": "Haier",
+   "match": [
+    "com.haier.",
+    "com.haierhl."
+   ]
+  },
+  "sharp": {
+   "label": "Sharp",
+   "match": [
+    "com.sharp.",
+    "com.mediatek.wwtv"
+   ]
+  },
+  "panasonic": {
+   "label": "Panasonic",
+   "match": [
+    "com.panasonic.",
+    "com.panasonic.avc."
+   ]
+  },
+  "samsung": {
+   "label": "Samsung",
+   "match": [
+    "com.samsung."
+   ]
+  },
+  "lg": {
+   "label": "LG",
+   "match": [
+    "com.lge."
+   ]
+  },
+  "nvidia": {
+   "label": "NVIDIA",
+   "match": [
+    "com.nvidia."
+   ]
+  },
+  "amazon": {
+   "label": "Amazon",
+   "match": [
+    "com.amazon."
+   ]
+  },
+  "mediatek": {
+   "label": "MediaTek",
+   "match": [
+    "com.mediatek.",
+    "com.mtk."
+   ]
+  },
+  "realtek": {
+   "label": "Realtek",
+   "match": [
+    "com.realtek."
+   ]
+  },
+  "amlogic": {
+   "label": "Amlogic",
+   "match": [
+    "com.amlogic."
+   ]
+  },
+  "google": {
+   "label": "Google",
+   "match": [
+    "com.google.",
+    "com.android."
+   ]
+  }
+ },
+ "heuristics": [
+  {
+   "pattern": "*acr*",
+   "tier": "ads",
+   "risk": "safe",
+   "label": "Content recognition (heuristic)",
+   "desc": "Automatic Content Recognition - fingerprints screen content for ads/analytics."
+  },
+  {
+   "pattern": "*samba*",
+   "tier": "ads",
+   "risk": "safe",
+   "label": "Samba-style tracking (heuristic)",
+   "desc": "ACR/telemetry service matching the Samba TV pattern."
+  },
+  {
+   "pattern": "*.ads.*",
+   "tier": "ads",
+   "risk": "safe",
+   "label": "Ads component (heuristic)",
+   "desc": "Package name contains an advertising segment."
+  },
+  {
+   "pattern": "*.adservice*",
+   "tier": "ads",
+   "risk": "safe",
+   "label": "Ad service (heuristic)",
+   "desc": "Package name contains an ad service."
+  },
+  {
+   "pattern": "*analytics*",
+   "tier": "ads",
+   "risk": "safe",
+   "label": "Analytics (heuristic)",
+   "desc": "Analytics package."
+  },
+  {
+   "pattern": "*telemetry*",
+   "tier": "ads",
+   "risk": "safe",
+   "label": "Telemetry (heuristic)",
+   "desc": "Telemetry reporter."
+  },
+  {
+   "pattern": "*metrics*",
+   "tier": "ads",
+   "risk": "caution",
+   "label": "Metrics (heuristic)",
+   "desc": "Metrics collection - verify it is not a core service."
+  },
+  {
+   "pattern": "*loguploader*",
+   "tier": "ads",
+   "risk": "safe",
+   "label": "Log uploader (heuristic)",
+   "desc": "Uploads device logs."
+  },
+  {
+   "pattern": "*crashreport*",
+   "tier": "ads",
+   "risk": "safe",
+   "label": "Crash reporter (heuristic)",
+   "desc": "Crash reporting."
+  },
+  {
+   "pattern": "*gdpr*",
+   "tier": "ads",
+   "risk": "caution",
+   "label": "Consent service (heuristic)",
+   "desc": "GDPR/consent management - check what it gates before disabling."
+  },
+  {
+   "pattern": "*demo*",
+   "tier": "promo",
+   "risk": "safe",
+   "label": "Demo component (heuristic)",
+   "desc": "Store/demo mode component."
+  },
+  {
+   "pattern": "*tutorial*",
+   "tier": "cruft",
+   "risk": "safe",
+   "label": "Tutorial (heuristic)",
+   "desc": "Tutorial app."
+  },
+  {
+   "pattern": "*manual*",
+   "tier": "cruft",
+   "risk": "safe",
+   "label": "Manual/help (heuristic)",
+   "desc": "On-screen manual/help."
+  },
+  {
+   "pattern": "*notice*",
+   "tier": "cruft",
+   "risk": "safe",
+   "label": "Notices (heuristic)",
+   "desc": "Legal notices app."
+  },
+  {
+   "pattern": "*updater*",
+   "tier": "ota",
+   "risk": "expert",
+   "label": "Updater (heuristic)",
+   "desc": "Update mechanism - disabling stops updates."
+  },
+  {
+   "pattern": "*.ota*",
+   "tier": "ota",
+   "risk": "expert",
+   "label": "OTA component (heuristic)",
+   "desc": "Over-the-air update component."
+  },
+  {
+   "pattern": "*shoptv*",
+   "tier": "promo",
+   "risk": "safe",
+   "label": "Shop TV (heuristic)",
+   "desc": "Shopping-on-TV service."
+  },
+  {
+   "pattern": "*screensaver*",
+   "tier": "promo",
+   "risk": "safe",
+   "label": "Screensaver (heuristic)",
+   "desc": "Screensaver component."
+  },
+  {
+   "pattern": "*ambient*",
+   "tier": "promo",
+   "risk": "caution",
+   "label": "Ambient mode (heuristic)",
+   "desc": "Ambient/screensaver mode."
+  }
+ ],
+ "presets": [
+  {
+   "id": "ads-telemetry",
+   "name": "Ads & Telemetry purge",
+   "desc": "Everything in the ads tier ONLY (ACR, ad IDs, analytics, crash reports, ad services). The lowest-risk, highest-value cleanup.",
+   "tiers": [
+    "ads"
+   ],
+   "max_risk": "safe",
+   "tuning": [
+    "animations"
+   ]
+  },
+  {
+   "id": "declutter",
+   "name": "Declutter home screen",
+   "desc": "Ads & telemetry + promo & recommendation surfaces + cruft (manuals, demos, tutorials). Keeps streaming apps and vendor services.",
+   "tiers": [
+    "ads",
+    "promo",
+    "cruft"
+   ],
+   "max_risk": "safe",
+   "tuning": [
+    "animations"
+   ]
+  },
+  {
+   "id": "google-galore",
+   "name": "Trim extra Google apps",
+   "desc": "Extra Google apps that make little sense on a TV (Play Games, Movies & TV, YouTube Music, sync adapters). Keep Play Store, GMS, YouTube itself.",
+   "tiers": [
+    "google_misc",
+    "games"
+   ],
+   "max_risk": "safe"
+  },
+  {
+   "id": "vendor-diet",
+   "name": "Vendor bloat diet (auto-detected brand)",
+   "desc": "Vendor apps/services of your detected TV brand, limited to safe+caution. Review the list - it is pre-selected, not pre-approved.",
+   "tiers": [
+    "vendor"
+   ],
+   "max_risk": "caution",
+   "vendor_only": true
+  },
+  {
+   "id": "expert",
+   "name": "Expert: everything reversible",
+   "desc": "All tiers up to expert risk: includes OTA components, casting, voice assistant, background vendor services. Do it in small batches and test between batches.",
+   "tiers": [
+    "ads",
+    "promo",
+    "cruft",
+    "vendor",
+    "games",
+    "google_misc",
+    "cast",
+    "assistant",
+    "ota"
+   ],
+   "max_risk": "expert"
+  }
+ ],
+ "tuning": {
+  "animations": {
+   "name": "Halve animation speeds",
+   "desc": "Makes the UI feel noticeably snappier on slow SoCs. Reversible.",
+   "commands": [
+    {
+     "cmd": "settings put global window_animation_scale 0.5",
+     "undo": "settings put global window_animation_scale 1.0"
+    },
+    {
+     "cmd": "settings put global transition_animation_scale 0.5",
+     "undo": "settings put global transition_animation_scale 1.0"
+    },
+    {
+     "cmd": "settings put global animator_duration_scale 0.5",
+     "undo": "settings put global animator_duration_scale 1.0"
+    }
+   ]
+  },
+  "trim-caches": {
+   "name": "Trim caches",
+   "desc": "Asks Android to evict unused cached files (frees storage).",
+   "commands": [
+    {
+     "cmd": "pm trim-caches 999G",
+     "undo": null
+    }
+   ]
+  }
+ },
+ "guidance": [
+  {
+   "title": "Acer TVs are Google TV underneath",
+   "body": "Acer Android/Google TVs mostly run the standard Google TV platform (like most modern smart TVs). Almost everything worth disabling is the Google/MediaTek platform layer - the generic rules in this tool detect it automatically. Brand apps, if present, appear as com.acer.*."
+  },
+  {
+   "title": "Keep the TV stock",
+   "body": "Never root, unlock the bootloader or flash a custom ROM just to debloat. `pm disable-user` already does everything root would, and unlocking the bootloader factory-resets the TV and can drop Widevine from L1 to L3 (Netflix falls back to SD)."
+  },
+  {
+   "title": "Disable, don't uninstall",
+   "body": "This tool uses `pm disable-user --user 0` by default: the app stops running and consuming RAM, but the APK stays in the system partition and every change is one `pm enable` away. Uninstall-for-user is available in expert mode for apps you are sure about."
+  },
+  {
+   "title": "Work in batches",
+   "body": "Apply at most ~10 packages, then use the TV: check the Inputs/Source button, HDMI switching, Netflix, YouTube, sound, and the on-screen keyboard. The app enforces a batch size limit for you."
+  },
+  {
+   "title": "Launcher replacement",
+   "body": "Google TV's home screen is made of ads. To replace it: install FLauncher or Projectivy Launcher from the Play Store, open it once, set it as default, and only then disable the stock launcher. Disabling the stock launcher first = black screen."
+  },
+  {
+   "title": "YouTube without ads",
+   "body": "The stock YouTube TV app is full of ads. SmartTube (github.com/yuliskov/SmartTube) is an open-source Android TV YouTube client with no ads; sideload it with `adb install smarttube.apk`."
+  },
+  {
+   "title": "Un-disableable trackers",
+   "body": "Some packages (e.g. Fire OS OTA/metrics, `com.amazon.client.metrics`) refuse to be disabled for the shell user. Block their domains at your router/DNS (Pi-hole, AdGuard Home) instead - that also survives factory resets."
+  },
+  {
+   "title": "Delete the advertising ID",
+   "body": "On Google TV: Settings > Privacy > Ads > 'Delete advertising ID'. On Android TV: Settings > Device Preferences > About > Ads > Opt out of Ads Personalization. This is 30 seconds and cannot break anything."
+  },
+  {
+   "title": "Wi-Fi & remote first",
+   "body": "If something stops working after a batch, re-enable the last batch first (journal has one-click undo), then narrow down one package at a time. You can always re-enable from this tool or by hand: `adb shell pm enable <package>`."
+  }
+ ],
+ "profiles": {
+  "firetv-stick-hd": {
+   "model": "AFTKRT",
+   "device": "karat",
+   "tiers": "ads promo ota cruft",
+   "launcher": "com.amazon.tv.launcher",
+   "media_apps": "com.amazon.firebat com.netflix.ninja com.disney.disneyplus com.hbo.hbonow com.apple.atve.amazon.appletv org.xbmc.kodi com.amazon.avod com.wbd.stream com.spotify.tv.android",
+   "props": "init.svc.drm=running init.svc.mediadrm=running ro.vendor.amzn_drm.widevine=yes ro.vendor.amzn_drm.playready=yes ro.vendor.amzn_drm.hdcp1=yes"
+  },
+  "sharp-4k-googletv": {
+   "model": "SHARP 4K UHDTV",
+   "device": "maniatika",
+   "tiers": "ads promo ota cruft",
+   "launcher": "com.spocky.projengmenu com.google.android.apps.tv.launcherx",
+   "media_apps": "com.netflix.ninja no.nrk.tv no.tv2.sumo com.disney.disneyplus com.wbd.stream com.google.android.youtube.tv org.xbmc.kodi com.spotify.tv.android",
+   "props": "init.svc.drm=running init.svc.mediadrm=running"
+  }
+ }
+}

@@ -1,0 +1,22 @@
+# Runtime data — contains your local device info / history, never commit
+journal/
+reports/
+
+# Bundled adb (22 MB of platform binaries — run.sh auto-downloads it)
+tools/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Test / tooling artifacts
+.playwright-mcp/
+
+# Logs & OS junk
+*.log
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

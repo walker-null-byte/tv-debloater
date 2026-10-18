@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TVDebloater</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📺</text></svg>">
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header>
+  <div class="brand">📺 <b>TVDebloater</b> <span id="ver" class="dim"></span>
+    <span id="mockBadge" class="badge mock hidden">MOCK MODE</span>
+  </div>
+  <div class="conn">
+    <span id="connPill" class="pill off">not connected</span>
+    <button id="btnConnect" class="btn primary">Connect device</button>
+  </div>
+</header>
+<div id="loadbar" class="hidden"><i></i></div>
+
+<div id="deviceBar" class="device-bar hidden"></div>
+
+<nav class="tabs">
+  <button data-tab="packages" class="tab active">Packages</button>
+  <button data-tab="presets" class="tab">Presets</button>
+  <button data-tab="tune" class="tab">Tune &amp; Guide</button>
+  <button data-tab="journal" class="tab">Journal</button>
+  <button data-tab="report" class="tab">Report</button>
+</nav>
+
+<main>
+  <!-- ============================== PACKAGES ============================== -->
+  <section id="tab-packages" class="tabpane active">
+    <div class="notice">
+      Everything here uses <code>pm disable-user --user 0</code> — nothing is uninstalled and every
+      change can be undone from the Journal. Apply in small batches (max 10) and test the TV between
+      batches: <b>Inputs/Source button, HDMI switching, Netflix, sound, on-screen keyboard</b>.
+    </div>
+    <div class="toolbar">
+      <input id="search" type="search" placeholder="Search app, package, description…">
+      <select id="fTier"><option value="">All tiers</option></select>
+      <select id="fRisk">
+        <option value="">Any risk</option>
+        <option value="safe">Safe</option>
+        <option value="caution">Caution</option>
+        <option value="expert">Expert</option>
+        <option value="keep">Protected</option>
+      </select>
+      <select id="fState">
+        <option value="enabled">Enabled</option>
+        <option value="disabled">Disabled</option>
+        <option value="">Any state</option>
+        <option value="system">System apps</option>
+        <option value="user">User apps</option>
+      </select>
+      <button id="btnRecommended" class="btn">✨ Select recommended</button>
+      <button id="btnClearSel" class="btn ghost">Clear</button>
+      <label class="switch" title="Allow expert-level packages and uninstall actions">
+        <input type="checkbox" id="expertMode"> Expert mode
+      </label>
+    </div>
+    <div id="statChips" class="chips"></div>
+    <div class="tablewrap">
+      <table id="pkgTable">
+        <thead>
+          <tr>
+            <th class="ck"><input type="checkbox" id="ckAll" title="Select all filtered"></th>
+            <th data-sort="label">App / package</th>
+            <th data-sort="tier">Tier</th>
+            <th data-sort="risk_rank">Risk</th>
+            <th data-sort="source">Source</th>
+            <th data-sort="state">State</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="pkgBody"></tbody>
+      </table>
+    </div>
+    <div id="loadMore" class="loadmore hidden"><button class="btn ghost">Show more…</button></div>
+    <div class="selectionbar">
+      <span id="selInfo">0 selected</span>
+      <span class="spacer"></span>
+      <select id="applyAction">
+        <option value="disable">Disable (reversible)</option>
+        <option value="enable">Re-enable</option>
+        <option value="force-stop">Force stop</option>
+        <option value="clear-data">Clear data</option>
+        <option value="uninstall">Uninstall for user 0 (expert)</option>
+        <option value="install-existing">Restore uninstalled app (expert)</option>
+      </select>
+      <button id="btnApply" class="btn primary" disabled>Preview &amp; apply…</button>
+    </div>
+  </section>
+
+  <!-- ============================== PRESETS ============================== -->
+  <section id="tab-presets" class="tabpane">
+    <div class="notice">
+      Presets pre-select packages from the public debloat databases and this tool's curated rules.
+      They are <b>pre-selected, never auto-applied</b> — you always see the exact list first.
+    </div>
+    <div id="presetCards" class="cards"></div>
+  </section>
+
+  <!-- ============================ TUNE & GUIDE =========================== -->
+  <section id="tab-tune" class="tabpane">
+    <h2>Tuning</h2>
+    <div id="tuningCards" class="cards"></div>
+    <h2>Before / after measurements</h2>
+    <div class="notice">Take a snapshot before cleaning up and one after a reboot — RAM and process
+      counts speak louder than vibes.</div>
+    <div class="row">
+      <button id="btnSnapBefore" class="btn">📸 Snapshot “before”</button>
+      <button id="btnSnapAfter" class="btn">📸 Snapshot “after”</button>
+      <button id="btnCompare" class="btn ghost">Compare before/after</button>
+    </div>
+    <div id="metricsBox"></div>
+    <h2>Guidance</h2>
+    <div id="guidanceList" class="guidance"></div>
+  </section>
+
+  <!-- ============================== JOURNAL ============================== -->
+  <section id="tab-journal" class="tabpane">
+    <div class="notice">Every change is logged with its exact undo command. Undoing a batch
+      restores the previous state (disable ⇄ enable, uninstall ⇄ install-existing).</div>
+    <div class="row">
+      <button id="btnExportUndo" class="btn ghost">⬇ Download undo script</button>
+      <button id="btnRefreshJournal" class="btn ghost">↻ Refresh</button>
+    </div>
+    <div id="journalList"></div>
+  </section>
+
+  <!-- =============================== REPORT ============================== -->
+  <section id="tab-report" class="tabpane">
+    <div class="row">
+      <button id="btnReport" class="btn primary">Generate report</button>
+      <button id="btnCopyReport" class="btn ghost">Copy markdown</button>
+    </div>
+    <pre id="reportOut" class="report">No report yet.</pre>
+  </section>
+</main>
+
+<div id="drawer" class="drawer hidden"></div>
+<div id="modal" class="modal hidden"><div class="modal-box" id="modalBox"></div></div>
+<div id="toasts"></div>
+<script src="/static/app.js"></script>
+</body>
+</html>
