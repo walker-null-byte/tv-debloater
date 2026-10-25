@@ -17,10 +17,11 @@ from flask import Flask, jsonify, request, send_from_directory
 from werkzeug.exceptions import HTTPException
 
 from debloater import __version__, discovery
-from debloater.actions import ActionError, Actions
+from debloater.actions import PACKAGE_NAME_RE, ActionError, Actions
 from debloater.adb import Adb, AdbError
 from debloater.device import compare_metrics, detect_vendor, device_info, inventory, metrics, package_detail
 from debloater.journal import Journal
+from debloater.mcp_endpoint import register_from_env
 from debloater.mockadb import MockAdb
 from debloater.rules import Rules
 
@@ -32,9 +33,16 @@ INV_TTL = 90  # seconds before the package cache is considered stale
 app = Flask(__name__, static_folder=None)
 
 
+class ConnectError(ActionError):
+    """adb could not reach the device (REST answers 502)."""
+
+
 # ------------------------------------------------------------------ state --
 
 class State:
+    """Everything the REST API and the MCP tools do goes through here, so both
+    front-ends share the same behaviour and the same safety gates."""
+
     def __init__(self):
         self.adb = MockAdb() if MOCK else Adb()
         self.rules = Rules()
@@ -44,7 +52,87 @@ class State:
         self.info: dict | None = None
         self._inv: dict | None = None
         self._inv_ts: float = 0.0
-        self.lock = threading.Lock()
+        self.lock = threading.Lock()        # inventory refresh
+        self.write_lock = threading.Lock()  # one device-changing operation at a time
+
+    # ------------------------------------------------------- connection ---
+
+    def status(self) -> dict:
+        try:
+            devices = self.adb.devices()
+        except AdbError as exc:
+            devices = [{"error": str(exc)}]
+        return {
+            "version": __version__,
+            "mock": MOCK,
+            "adb_path": getattr(self.adb, "path", ""),
+            "adb_available": self.adb.available(),
+            "adb_version": self.adb.version(),
+            "devices": devices,
+            "selected": self.serial,
+            "device": self.info,
+            "rules_meta": self.rules.tv["meta"],
+        }
+
+    def discover(self) -> dict:
+        if MOCK:
+            return {
+                "interfaces": [{"interface": "wlan0", "ip": "192.168.1.140", "prefix": 24}],
+                "mdns": self.adb.mdns_services(),
+                "found": [{"ip": "192.168.1.57", "port": 5555, "interface": "wlan0",
+                           "mac": "aa:bb:cc:dd:ee:ff", "hostname": "mock-acer-tv",
+                           "source": "mock"}],
+                "notes": ["MOCK MODE: this is a fake device."],
+            }
+        return discovery.discover(self.adb)
+
+    @staticmethod
+    def _check_host(host: str) -> str:
+        host = (host or "").strip()
+        if not host:
+            raise ActionError("host is required")
+        if host.startswith("-") or any(c.isspace() for c in host):  # would read as an adb option
+            raise ActionError("invalid host")
+        return host
+
+    def pair(self, host: str, port: int | str, code: str) -> str:
+        host = self._check_host(host)
+        code = str(code or "").strip()
+        if not (port and code.isdigit()):
+            raise ActionError("host, port and the numeric pairing code are required")
+        success, message = self.adb.pair(host, int(port), code)
+        if not success:
+            raise ConnectError(message or "pairing failed")
+        return message
+
+    def connect(self, host: str, port: int = 5555) -> dict:
+        host = self._check_host(host)
+        success, message = self.adb.connect(host, port)
+        if not success:
+            raise ConnectError(message or "could not connect")
+        serial = host if host.endswith(f":{port}") else f"{host}:{port}"
+        # adb may normalize the serial
+        for dev in self.adb.devices():
+            if dev.get("state") == "device" and (dev["serial"] in serial or serial in dev["serial"]):
+                serial = dev["serial"]
+                break
+        self.serial = serial
+        self.invalidate()
+        try:
+            self.info = device_info(self.adb, serial)
+        except AdbError as exc:
+            self.info = {"serial": serial, "info_error": str(exc)}
+        return {"message": message, "serial": serial, "device": self.info,
+                "unauthorized": any(d.get("state") == "unauthorized" for d in self.adb.devices())}
+
+    def select(self, serial: str) -> dict:
+        serial = (serial or "").strip()
+        if not serial:
+            raise ActionError("serial is required")
+        self.serial = serial
+        self.invalidate()
+        self.info = device_info(self.adb, serial)
+        return {"serial": serial, "device": self.info}
 
     # -------------------------------------------------------- inventory ---
 
@@ -80,6 +168,93 @@ class State:
         self._inv = None
         self._inv_ts = 0.0
 
+    def package_info(self, pkg: str, expert: bool = False) -> dict:
+        serial = self.ensure_connected()
+        if not PACKAGE_NAME_RE.match(pkg):  # goes into `dumpsys package <pkg>` on the TV
+            raise ActionError("not a valid Android package name")
+        classification = self.rules.classify(pkg)
+        safety_ok, safety_reason = self.rules.safety_check(pkg)
+        detail = {}
+        try:
+            detail = package_detail(self.adb, serial, pkg)
+        except AdbError as exc:
+            detail = {"error": str(exc)}
+        can_disable, disable_reason = False, str(safety_reason or "")
+        try:
+            can_disable, disable_reason = self.actions.check_package(pkg, "disable", serial, expert)
+        except Exception as exc:  # guards query device state - never 500 the detail view
+            disable_reason = f"could not evaluate: {exc}"
+        return {"package": pkg, "classification": classification, "detail": detail,
+                "safety": {"allowed": safety_ok, "reason": safety_reason},
+                "disable_check": {"allowed": can_disable, "reason": disable_reason}}
+
+    # ----------------------------------------------------------- changes ---
+
+    def apply(self, action: str, packages: list[str], *, expert: bool = False,
+              dry_run: bool = False, note: str = "") -> dict:
+        serial = self.ensure_connected()
+        if not packages:
+            raise ActionError("no packages selected")
+        inv = self.get_inventory()
+        kwargs = dict(expert=expert, dry_run=dry_run, rows=inv["rows_by_pkg"], note=note,
+                      device_label=(self.info or {}).get("model", ""))
+        if dry_run:
+            return self.actions.apply(action, packages, serial, **kwargs)
+        with self.write_lock:
+            result = self.actions.apply(action, packages, serial, **kwargs)
+        self.invalidate()
+        return result
+
+    def undo(self, batch_id: str) -> dict:
+        with self.write_lock:
+            result = self.actions.undo_batch(batch_id)
+        self.invalidate()
+        return result
+
+    def apply_tuning(self, tuning_id: str, dry_run: bool = False) -> dict:
+        serial = self.ensure_connected()
+        with self.write_lock:
+            return self.actions.apply_tuning(
+                tuning_id, serial, device_label=(self.info or {}).get("model", ""),
+                dry_run=dry_run)
+
+    # ----------------------------------------------------------- presets ---
+
+    def presets(self) -> dict:
+        inv = self.get_inventory()
+        out = []
+        for preset in self.rules.presets:
+            resolved = self.rules.resolve_preset(preset["id"], inv["rows"], inv["vendor"]["key"])
+            out.append({**preset, "_count": len(resolved["packages"])})
+        guided = self.rules.recommended(inv["rows"])
+        return {"presets": out, "recommended": [r["package"] for r in guided],
+                "vendor": inv["vendor"]}
+
+    def preset(self, preset_id: str) -> dict:
+        inv = self.get_inventory()
+        try:
+            resolved = self.rules.resolve_preset(preset_id, inv["rows"], inv["vendor"]["key"])
+        except KeyError as exc:
+            raise ActionError(exc.args[0]) from exc
+        return {"preset": resolved["preset"],
+                "packages": [{k: r[k] for k in ("package", "label", "tier", "tier_label",
+                                                "risk", "risk_rank", "desc", "source",
+                                                "keep", "enabled", "system", "vendor")}
+                             for r in resolved["packages"]]}
+
+    # ------------------------------------------------------------ report ---
+
+    def report(self) -> dict:
+        md = self.journal.markdown_report(self.serial, self.info)
+        REPORTS.mkdir(exist_ok=True, parents=True)
+        stamp = time.strftime("%Y%m%d-%H%M%S")
+        path = REPORTS / f"debloat-report-{stamp}.md"
+        path.write_text(md)
+        undo = REPORTS / "undo.sh"
+        undo.write_text(self.journal.undo_script(self.serial))
+        undo.chmod(0o755)
+        return {"markdown": md, "saved": str(path), "undo_script_saved": str(undo)}
+
     # --------------------------------------------------------- snapshots ---
 
     @property
@@ -112,6 +287,7 @@ class State:
 
 
 state = State()
+MCP_MOUNTED, MCP_NOTE = register_from_env(app, state)  # POST /mcp for agents
 
 
 # ----------------------------------------------------------------- helpers --
@@ -132,6 +308,11 @@ def handle_adb_error(exc: AdbError):
 @app.errorhandler(ActionError)
 def handle_action_error(exc: ActionError):
     return jsonify({"error": str(exc)}), 400
+
+
+@app.errorhandler(ConnectError)
+def handle_connect_error(exc: ConnectError):
+    return jsonify({"error": str(exc)}), 502
 
 
 @app.errorhandler(Exception)
@@ -159,62 +340,18 @@ def static_files(path: str):
 
 @app.get("/api/status")
 def api_status():
-    devices = []
-    try:
-        devices = state.adb.devices()
-    except AdbError as exc:
-        devices = [{"error": str(exc)}]
-    return ok({
-        "version": __version__,
-        "mock": MOCK,
-        "adb_path": getattr(state.adb, "path", ""),
-        "adb_available": state.adb.available(),
-        "adb_version": state.adb.version(),
-        "devices": devices,
-        "selected": state.serial,
-        "device": state.info,
-        "rules_meta": state.rules.tv["meta"],
-    })
+    return ok(state.status())
 
 
 @app.get("/api/discover")
 def api_discover():
-    if MOCK:
-        return ok({
-            "interfaces": [{"interface": "wlan0", "ip": "192.168.1.140", "prefix": 24}],
-            "mdns": state.adb.mdns_services(),
-            "found": [{"ip": "192.168.1.57", "port": 5555, "interface": "wlan0",
-                       "mac": "aa:bb:cc:dd:ee:ff", "hostname": "mock-acer-tv",
-                       "source": "mock"}],
-            "notes": ["MOCK MODE: this is a fake device."],
-        })
-    return ok(discovery.discover(state.adb))
+    return ok(state.discover())
 
 
 @app.post("/api/connect")
 def api_connect():
     body = request.get_json(force=True, silent=True) or {}
-    host = (body.get("host") or "").strip()
-    port = int(body.get("port") or 5555)
-    if not host:
-        return fail("host is required")
-    success, message = state.adb.connect(host, port)
-    if not success:
-        return fail(message or "could not connect", 502)
-    serial = host if host.endswith(f":{port}") else f"{host}:{port}"
-    # adb may normalize the serial
-    for dev in state.adb.devices():
-        if dev.get("state") == "device" and (dev["serial"] in serial or serial in dev["serial"]):
-            serial = dev["serial"]
-            break
-    state.serial = serial
-    state.invalidate()
-    try:
-        state.info = device_info(state.adb, serial)
-    except AdbError as exc:
-        state.info = {"serial": serial, "info_error": str(exc)}
-    return ok({"message": message, "serial": serial, "device": state.info,
-               "unauthorized": any(d.get("state") == "unauthorized" for d in state.adb.devices())})
+    return ok(state.connect(body.get("host") or "", int(body.get("port") or 5555)))
 
 
 @app.post("/api/pair")
@@ -244,13 +381,7 @@ def api_disconnect():
 @app.post("/api/select")
 def api_select():
     body = request.get_json(force=True, silent=True) or {}
-    serial = (body.get("serial") or "").strip()
-    if not serial:
-        return fail("serial is required")
-    state.serial = serial
-    state.invalidate()
-    state.info = device_info(state.adb, serial)
-    return ok({"serial": serial, "device": state.info})
+    return ok(state.select(body.get("serial") or ""))
 
 
 @app.get("/api/device")
@@ -275,48 +406,21 @@ def api_packages():
 
 @app.get("/api/package/<path:pkg>")
 def api_package(pkg: str):
-    serial = state.ensure_connected()
-    classification = state.rules.classify(pkg)
-    safety_ok, safety_reason = state.rules.safety_check(pkg)
-    detail = {}
-    try:
-        detail = package_detail(state.adb, serial, pkg)
-    except AdbError as exc:
-        detail = {"error": str(exc)}
-    can_disable, disable_reason = False, str(safety_reason or "")
-    expert = request.args.get("expert") == "1"
-    try:
-        from debloater.actions import MAX_PER_BATCH  # noqa: F401
-        can_disable, disable_reason = state.actions.check_package(pkg, "disable", serial, expert)
-    except Exception as exc:  # guards query device state - never 500 the detail view
-        disable_reason = f"could not evaluate: {exc}"
-    return ok({"package": pkg, "classification": classification, "detail": detail,
-               "safety": {"allowed": safety_ok, "reason": safety_reason},
-               "disable_check": {"allowed": can_disable, "reason": disable_reason}})
+    return ok(state.package_info(pkg, expert=request.args.get("expert") == "1"))
 
 
 # ----------------------------------------------------------------- actions --
 
 @app.post("/api/apply")
 def api_apply():
-    serial = state.ensure_connected()
     body = request.get_json(force=True, silent=True) or {}
-    action = body.get("action") or "disable"
-    packages = [p for p in (body.get("packages") or []) if p]
-    if not packages:
-        return fail("no packages selected")
-    inv = state.get_inventory()
-    result = state.actions.apply(
-        action, packages, serial,
+    return ok(state.apply(
+        body.get("action") or "disable",
+        [p for p in (body.get("packages") or []) if p],
         expert=bool(body.get("expert")),
         dry_run=bool(body.get("dry_run")),
-        rows=inv["rows_by_pkg"],
         note=body.get("note") or "",
-        device_label=(state.info or {}).get("model", ""),
-    )
-    if not result.get("dry_run"):
-        state.invalidate()
-    return ok(result)
+    ))
 
 
 @app.get("/api/journal")
@@ -332,34 +436,19 @@ def api_undo():
     batch_id = body.get("batch_id")
     if not batch_id:
         return fail("batch_id is required")
-    result = state.actions.undo_batch(batch_id)
-    state.invalidate()
-    return ok(result)
+    return ok(state.undo(batch_id))
 
 
 # ----------------------------------------------------------------- presets --
 
 @app.get("/api/presets")
 def api_presets():
-    inv = state.get_inventory()
-    out = []
-    for preset in state.rules.presets:
-        resolved = state.rules.resolve_preset(preset["id"], inv["rows"], inv["vendor"]["key"])
-        out.append({**preset, "_count": len(resolved["packages"])})
-    guided = state.rules.recommended(inv["rows"])
-    return ok({"presets": out, "recommended": [r["package"] for r in guided],
-               "vendor": inv["vendor"]})
+    return ok(state.presets())
 
 
 @app.get("/api/preset/<preset_id>")
 def api_preset(preset_id: str):
-    inv = state.get_inventory()
-    resolved = state.rules.resolve_preset(preset_id, inv["rows"], inv["vendor"]["key"])
-    return ok({"preset": resolved["preset"],
-               "packages": [{k: r[k] for k in ("package", "label", "tier", "tier_label",
-                                               "risk", "risk_rank", "desc", "source",
-                                               "keep", "enabled", "system", "vendor")}
-                            for r in resolved["packages"]]})
+    return ok(state.preset(preset_id))
 
 
 # ------------------------------------------------------------------ tuning --
@@ -372,13 +461,8 @@ def api_tuning():
 
 @app.post("/api/tuning")
 def api_tuning_apply():
-    serial = state.ensure_connected()
     body = request.get_json(force=True, silent=True) or {}
-    result = state.actions.apply_tuning(
-        body.get("id", ""), serial,
-        device_label=(state.info or {}).get("model", ""),
-        dry_run=bool(body.get("dry_run")))
-    return ok(result)
+    return ok(state.apply_tuning(body.get("id", ""), dry_run=bool(body.get("dry_run"))))
 
 
 # ----------------------------------------------------------------- metrics --
@@ -411,17 +495,7 @@ def api_metrics_compare():
 
 @app.get("/api/report")
 def api_report():
-    serial = state.serial
-    md = state.journal.markdown_report(serial, state.info)
-    reports = REPORTS
-    reports.mkdir(exist_ok=True, parents=True)
-    stamp = time.strftime("%Y%m%d-%H%M%S")
-    path = reports / f"debloat-report-{stamp}.md"
-    path.write_text(md)
-    undo = reports / "undo.sh"
-    undo.write_text(state.journal.undo_script(serial))
-    undo.chmod(0o755)
-    return ok({"markdown": md, "saved": str(path), "undo_script_saved": str(undo)})
+    return ok(state.report())
 
 
 @app.get("/api/export/undo-script")
@@ -438,4 +512,5 @@ if __name__ == "__main__":
     if MOCK:
         banner += "   [MOCK MODE - no real device]"
     print(banner)
+    print(f"MCP: http://{host}:{port}/mcp - {MCP_NOTE}" if MCP_MOUNTED else f"MCP: {MCP_NOTE}")
     app.run(host=host, port=port, threaded=True, debug=False)

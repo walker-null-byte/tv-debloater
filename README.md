@@ -13,6 +13,7 @@ and lets you disable the junk **without ever risking a brick**.
 │  device.py      → list packages, parse dumpsys, metrics                       │
 │  rules.py       → classify every package: tier + risk + protected             │
 │  actions.py     → safety gates, batches of 10, journal, undo                  │
+│  mcp_*.py       → POST /mcp: the same engine for AI agents (TurboMCP)         │
 └───────────────────────────────── HTML frontend ───────────────────────────────┘
 ```
 
@@ -59,6 +60,53 @@ Try the whole thing without a TV first: `TVD_MOCK=1 ./run.sh`
 * **Journal** – every action with its undo; per-batch one-click revert.
 * **Report** – markdown report + `reports/undo.sh` ready to run from anywhere.
 
+## Agent access (MCP)
+
+The server also speaks the [Model Context Protocol](https://modelcontextprotocol.io) at
+**`http://127.0.0.1:8477/mcp`** (Streamable HTTP, built on [TurboMCP](https://pypi.org/project/turbomcp/)),
+so an AI agent can do the whole job: find and connect to the TV, pick a preset, preview, apply in
+batches, check the result, undo.
+
+```bash
+# Claude Code
+claude mcp add --transport http tvdebloater http://127.0.0.1:8477/mcp
+# ...with a token (see below)
+claude mcp add --transport http tvdebloater http://127.0.0.1:8477/mcp --header "Authorization: Bearer $TVD_MCP_TOKEN"
+```
+
+Any other MCP client that supports HTTP servers works the same way. Try it without a TV:
+`TVD_MOCK=1 ./run.sh`.
+
+**The agent gets the same safety model as the UI, not a way around it.** Every change goes through
+the same engine: hard keep-list, launcher and keyboard guards, max 10 packages per batch, journal and
+undo. On top of that:
+
+* Packages are only ever **disabled or re-enabled**. Uninstall and *Expert mode* are not exposed —
+  that consent belongs to a human at the UI. Expert-risk and unclassified packages are refused.
+* Package names must be valid Android names (they end up in an `adb shell` command).
+* The apply tools are separate from the read-only ones, so a client can auto-approve browsing and
+  still prompt before anything touches the TV (`apply_changes`, `undo_batch`, `apply_tuning`).
+* Device-changing calls run one at a time, even if the agent fires them in parallel.
+
+| Tools | |
+|---|---|
+| `get_status` `discover_devices` `connect_device` `pair_device` `select_device` | find and connect |
+| `list_packages` `get_package` `list_presets` `get_preset` | look around (compact, paged output) |
+| `preview_changes` | dry run: exact commands + what the rules refuse |
+| `apply_changes` `undo_batch` `apply_tuning` | **change the TV** (journaled) |
+| `get_journal` `save_snapshot` `compare_snapshots` `generate_report` | verify and document |
+
+**Who can reach `/mcp`.** Browsers are kept out: a request with a foreign `Origin` is refused, no CORS
+headers are sent, and without a token the `Host` must be `localhost` / `127.0.0.1` / `[::1]` (blocks
+DNS rebinding). Binding to anything other than loopback (`TVD_HOST=0.0.0.0`) **disables `/mcp`
+unless a token is set**.
+
+| Variable | Effect |
+|---|---|
+| `TVD_MCP=0` | don't mount `/mcp` |
+| `TVD_MCP_TOKEN=<secret>` | require `Authorization: Bearer <secret>` |
+| `TVD_MCP_ALLOWED_HOSTS=a.lan,b.lan` | extra `Host` names accepted when no token is set |
+
 ## Classification sources
 
 | Source | What comes from it |
@@ -77,7 +125,7 @@ Merge order / regeneration:
 
 ```bash
 python3 scripts/update_sources.py    # re-download upstream data + rebuild data/tv_rules.json
-python3 scripts/selftest.py          # 78 checks: classification, guards, apply/undo, API
+python3 scripts/selftest.py          # 160+ checks: classification, guards, apply/undo, REST API, MCP
 ```
 
 Never edit `data/tv_rules.json` by hand — edit `data/curated_extra.json` and rebuild.
@@ -85,8 +133,8 @@ Never edit `data/tv_rules.json` by hand — edit `data/curated_extra.json` and r
 ## Layout
 
 ```
-app.py                  Flask app / REST API
-run.sh                  launcher (bootstraps adb + Flask)
+app.py                  Flask app / REST API (State = what the UI and MCP both call)
+run.sh                  launcher (bootstraps adb + Flask + TurboMCP)
 debloater/
   adb.py  mockadb.py    adb wrapper + full fake TV for testing
   discovery.py          LAN scan + mDNS
@@ -94,6 +142,8 @@ debloater/
   rules.py              classification engine
   actions.py            safety gates, batching, journal+undo
   journal.py            append-only log, undo script, markdown report
+  mcp_tools.py          the MCP tools + agent instructions
+  mcp_endpoint.py       POST /mcp: origin / host / token checks around TurboMCP
 data/                   curated rules + upstream databases (raw_sources/)
 scripts/                import_sources.py, update_sources.py, selftest.py
 journal/journal.jsonl   every change ever made, with undo info

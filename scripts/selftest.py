@@ -300,5 +300,294 @@ server.state.actions.apply = _orig_apply
 check("unexpected errors return readable JSON",
       code == 500 and "boom" in (res or {}).get("error", ""), res)
 
+# --- shell injection through package names is refused (REST + guards) ----------
+evil = "com.google.android.tv.ads; reboot"
+code, res = jpost("/api/apply", {"action": "disable", "packages": [evil], "dry_run": True})
+check("REST: shell metacharacters in a package name are denied",
+      code == 200 and not res["allowed"] and "valid Android package name" in res["denied"][0]["blocked_reason"], res)
+code, res = jget(f"/api/package/{evil}")
+check("REST: package detail rejects a malformed name", code == 400, res)
+code, res = jget("/api/preset/no-such-preset")
+check("REST: unknown preset is a 400, not a crash", code == 400, res)
+
+# ==============================================================================
+print("\n== MCP endpoint (/mcp) ==")
+import json  # noqa: E402
+import threading  # noqa: E402
+import time  # noqa: E402
+
+from flask import Flask  # noqa: E402
+
+from debloater.mcp_endpoint import register_mcp  # noqa: E402
+
+mock = server.state.adb
+JSON_ACCEPT = {"Accept": "application/json, text/event-stream"}
+
+
+def rpc(method, params=None, *, c=None, **kw):
+    r = (c or client).post("/mcp", json={"jsonrpc": "2.0", "id": 1, "method": method,
+                                         "params": params or {}}, headers=JSON_ACCEPT, **kw)
+    return r.status_code, r.get_json()
+
+
+def call(name, **args):
+    """-> (is_error, parsed result or error text)"""
+    code, res = rpc("tools/call", {"name": name, "arguments": args})
+    assert code == 200, (code, res)
+    result = res["result"]
+    text = result["content"][0]["text"]
+    return result["isError"], text if result["isError"] else json.loads(text)
+
+
+code, res = rpc("initialize", {"protocolVersion": "2025-06-18", "capabilities": {},
+                               "clientInfo": {"name": "selftest", "version": "0"}})
+check("MCP initialize", code == 200 and res["result"]["serverInfo"]["name"] == "tvdebloater", res)
+check("MCP initialize carries the workflow instructions",
+      "apply_changes" in res["result"].get("instructions", "")
+      and "never uninstalled" in res["result"]["instructions"])
+r = client.post("/mcp", json={"jsonrpc": "2.0", "method": "notifications/initialized"})
+check("MCP notification -> 202", r.status_code == 202)
+
+code, res = rpc("tools/list")
+tools = {t["name"]: t for t in res["result"]["tools"]}
+expected = {"get_status", "discover_devices", "connect_device", "pair_device", "select_device",
+            "list_packages", "get_package", "list_presets", "get_preset", "preview_changes",
+            "apply_changes", "undo_batch", "get_journal", "list_tuning", "apply_tuning",
+            "save_snapshot", "compare_snapshots", "generate_report"}
+check("MCP tools/list exposes every tool", set(tools) == expected, set(tools) ^ expected)
+check("every tool has a description", all(t["description"] for t in tools.values()))
+check("apply_changes schema: action enum, packages array",
+      tools["apply_changes"]["inputSchema"]["properties"]["action"]["enum"] == ["disable", "enable"]
+      and tools["apply_changes"]["inputSchema"]["properties"]["packages"]["type"] == "array"
+      and tools["apply_changes"]["inputSchema"]["required"] == ["packages"])
+check("no tool exposes an expert switch",
+      not any("expert" in t["inputSchema"].get("properties", {}) for t in tools.values()))
+code, res = rpc("tools/call", {"name": "nope", "arguments": {}})
+check("unknown tool -> JSON-RPC error", "error" in res, res)
+code, res = rpc("no/such/method")
+check("unknown method -> JSON-RPC error", res["error"]["code"] == -32601, res)
+
+# --- read-only tools ------------------------------------------------------------
+err, st = call("get_status")
+check("get_status", not err and st["selected"] == server.state.serial and st["adb_available"], st)
+check("get_status omits bulky rules metadata", "rules_meta" not in st)
+err, out = call("discover_devices")
+check("discover_devices (mock)", not err and len(out["found"]) >= 1)
+err, out = call("list_packages")
+check("list_packages: compact page", not err and out["returned"] == len(out["packages"]) <= 100
+      and out["total_matching"] > 60 and "raw_head" not in out["packages"][0]
+      and {"package", "label", "tier", "risk", "enabled", "protected"} <= set(out["packages"][0]), out.get("counts"))
+page1 = out["packages"]
+err, out = call("list_packages", tier="ads")
+check("list_packages: tier filter", not err and out["total_matching"] > 0
+      and all(p["tier"] == "ads" for p in out["packages"]))
+err, out = call("list_packages", only_actionable=True)
+check("list_packages: only_actionable hides protected & disabled",
+      not err and all(p["enabled"] and not p["protected"] for p in out["packages"]))
+err, out = call("list_packages", search="ANOKI")
+check("list_packages: case-insensitive search", not err and any("anoki" in p["package"] for p in out["packages"]))
+err, out = call("list_packages", limit=5, offset=3)
+check("list_packages: paging", not err and out["returned"] == 5 and out["packages"][0] == page1[3])
+err, out = call("list_packages", limit=100000)
+check("list_packages: limit is clamped", not err and out["returned"] <= 200)
+err, msg = call("list_packages", tier="bogus")
+check("list_packages: bad tier -> tool error naming valid tiers", err and "valid:" in msg, msg)
+err, msg = call("list_packages", status="maybe")
+check("list_packages: bad status -> tool error", err, msg)
+
+err, out = call("get_package", package="com.google.android.tv.ads")
+check("get_package", not err and out["classification"]["tier"] == "ads"
+      and "raw_head" not in out["detail"] and out["disable_check"]["allowed"], out)
+err, msg = call("get_package", package="x; reboot")
+check("get_package: malformed name -> tool error", err and "package name" in msg, msg)
+
+err, out = call("list_presets")
+check("list_presets", not err and any(p["id"] == "ads-telemetry" and p["package_count"] > 0
+                                      for p in out["presets"]), out)
+err, out = call("get_preset", preset_id="ads-telemetry")
+check("get_preset", not err and out["count"] > 0 and out["batch_size"] == 10, out)
+preset_pkgs = [p["package"] for p in out["packages"]]
+err, msg = call("get_preset", preset_id="nope")
+check("get_preset: unknown id -> tool error", err and "unknown preset" in msg, msg)
+
+# --- preview ----------------------------------------------------------------------
+protected = "com.android.location.fused"
+err, out = call("preview_changes", packages=preset_pkgs[:3] + [protected, evil])
+check("preview_changes: allows safe, denies protected + injection",
+      not err and len(out["allowed"]) == 3
+      and {d["package"] for d in out["denied"]} == {protected, evil}
+      and all(d["reason"] for d in out["denied"]), out)
+check("preview_changes shows the exact command",
+      out["allowed"][0]["command"] == f"pm disable-user --user 0 {preset_pkgs[0]}")
+mock.calls.clear()
+call("preview_changes", packages=preset_pkgs[:3])
+check("preview_changes never runs a change on the device",
+      not any(c.startswith(("pm disable", "pm enable", "settings put")) for c in mock.calls), mock.calls)
+err, msg = call("preview_changes", packages=preset_pkgs[:3], action="uninstall")
+check("uninstall is not available over MCP", err and "not available over MCP" in msg, msg)
+err, msg = call("preview_changes", packages="com.google.android.tv.ads")
+check("packages must be a list", err and "list" in msg, msg)
+err, msg = call("preview_changes", packages=[f"com.example.app{i}" for i in range(51)])
+check("preview is capped", err and "at most" in msg, msg)
+
+# --- apply / undo -----------------------------------------------------------------
+batch = preset_pkgs[:5]
+err, out = call("apply_changes", packages=batch, note="mcp selftest")
+check("apply_changes: disables the batch", not err and out["applied"] == 5 and out["failed"] == 0
+      and all(r["ok"] and r["verified_disabled"] for r in out["results"]), out)
+check("apply_changes: device really changed", all(p in mock.disabled for p in batch))
+check("apply_changes: points at undo", out["batch_id"] in out.get("next_step", ""), out)
+mcp_batch = out["batch_id"]
+err, out = call("list_packages", status="disabled")
+check("list_packages sees the change immediately (cache invalidated)",
+      not err and set(batch) <= {p["package"] for p in out["packages"]})
+err, out = call("get_journal", limit=3)
+check("get_journal lists the batch with its note", not err and out["batches"][0]["batch_id"] == mcp_batch
+      and out["batches"][0]["note"] == "mcp selftest" and set(out["batches"][0]["packages"]) == set(batch), out)
+
+mock.calls.clear()
+err, out = call("apply_changes", packages=[protected, evil])
+check("apply_changes: protected + injected names are skipped, nothing runs",
+      not err and out["applied"] == 0 and len(out["denied"]) == 2
+      and not any(c.startswith("pm disable") for c in mock.calls) and "next_step" not in out, (out, mock.calls))
+check("injected command never reached the journal",
+      not any(";" in (e.get("command") or "") for e in server.state.journal.entries(limit=1000)))
+err, msg = call("apply_changes", packages=[f"com.example.app{i}" for i in range(11)])
+check("apply_changes: >10 packages refused", err and "batch too large" in msg, msg)
+rows_now = server.state.get_inventory(refresh=True)["rows"]
+expert_pkg = next(r["package"] for r in rows_now
+                  if r["risk"] == "expert" and r["enabled"] and not r["keep"] and not r["blocked"])
+err, out = call("apply_changes", packages=[expert_pkg])
+check("apply_changes: expert-risk package is refused (no expert switch over MCP)",
+      not err and out["applied"] == 0 and "Expert" in out["denied"][0]["reason"], out)
+err, msg = call("apply_changes", packages=batch, action="uninstall")
+check("apply_changes: uninstall is refused", err and "not available over MCP" in msg, msg)
+
+err, out = call("undo_batch", batch_id=mcp_batch)
+check("undo_batch re-enables everything", not err and out["applied"] == 5
+      and not any(p in mock.disabled for p in batch), out)
+err, msg = call("undo_batch", batch_id="nope")
+check("undo_batch: unknown id -> tool error", err and "unknown batch" in msg, msg)
+
+# --- tuning, snapshots, report -----------------------------------------------------
+err, out = call("list_tuning")
+check("list_tuning", not err and any(t["id"] == "animations" and t["commands"] for t in out["tuning"])
+      and len(out["guidance"]) > 0)
+err, out = call("apply_tuning", tuning_id="animations")
+check("apply_tuning", not err and out["applied"] == 3 and mock.settings["window_animation_scale"] == "0.5", out)
+err, undo_out = call("undo_batch", batch_id=out["batch_id"])
+check("undo reverts tuning", not err and mock.settings["window_animation_scale"] == "1.0", undo_out)
+err, msg = call("apply_tuning", tuning_id="nope")
+check("apply_tuning: unknown id -> tool error", err, msg)
+err, out = call("save_snapshot", label="mcp-before")
+err2, out2 = call("save_snapshot", label="mcp-after")
+err3, diff = call("compare_snapshots", before="mcp-before", after="mcp-after")
+check("snapshots + compare", not (err or err2 or err3) and "ram" in diff and "counts" in diff, diff)
+err, msg = call("compare_snapshots", before="mcp-before", after="missing")
+check("compare_snapshots: missing label -> tool error", err and "missing" in msg, msg)
+err, out = call("generate_report")
+check("generate_report", not err and "Applied changes" in out["markdown"] and Path(out["saved"]).exists())
+
+# --- connection tools ----------------------------------------------------------------
+err, out = call("connect_device", host="192.168.1.57", port=5555)
+check("connect_device", not err and out["device"]["brand"] == "Acer", out)
+err, msg = call("connect_device", host="--help")
+check("connect_device: option-like host refused", err and "invalid host" in msg, msg)
+err, out = call("pair_device", host="192.168.1.57", port=37000, code="123456")
+check("pair_device", not err and "paired" in out["message"].lower(), out)
+err, msg = call("pair_device", host="192.168.1.57", port=37000, code="000000")
+check("pair_device: wrong code -> tool error", err and "Wrong password" in msg, msg)
+err, msg = call("pair_device", host="192.168.1.57", port=37000, code="12 34")
+check("pair_device: non-numeric code refused", err, msg)
+err, out = call("select_device", serial=server.state.serial)
+check("select_device", not err and out["serial"] == server.state.serial, out)
+
+# --- device changes are serialized -------------------------------------------------
+spans: list[tuple[float, float]] = []
+real_apply = server.state.actions.apply
+
+
+def slow_apply(*a, **k):
+    start = time.monotonic()
+    time.sleep(0.15)
+    out = real_apply(*a, **k)
+    spans.append((start, time.monotonic()))
+    return out
+
+
+server.state.actions.apply = slow_apply
+threads = [threading.Thread(target=call, args=("apply_changes",),
+                            kwargs={"packages": [p], "action": "enable"}) for p in preset_pkgs[:2]]
+[t.start() for t in threads]
+[t.join() for t in threads]
+server.state.actions.apply = real_apply
+spans.sort()
+check("concurrent apply_changes calls run one after the other",
+      len(spans) == 2 and spans[0][1] <= spans[1][0], spans)
+
+# --- HTTP edge: origin, host, token, content-type ----------------------------------------
+BODY = {"jsonrpc": "2.0", "id": 1, "method": "ping"}
+r = client.post("/mcp", json=BODY, headers={"Origin": "http://evil.example"})
+check("cross-origin POST refused (403)", r.status_code == 403)
+r = client.post("/mcp", json=BODY, headers={"Origin": "null"})
+check("opaque 'null' origin refused", r.status_code == 403)
+r = client.post("/mcp", json=BODY, headers={"Origin": "http://localhost"})
+check("same-origin POST allowed", r.status_code == 200)
+r = client.post("/mcp", json=BODY, base_url="http://evil.example:8477")
+check("DNS rebinding (foreign Host, no token) refused", r.status_code == 403)
+r = client.post("/mcp", json=BODY, base_url="http://127.0.0.1:8477")
+check("127.0.0.1 and [::1] hosts allowed",
+      r.status_code == 200 and client.post("/mcp", json=BODY, base_url="http://[::1]:8477").status_code == 200)
+r = client.post("/mcp", data="hello", content_type="text/plain")
+check("non-JSON content type -> 415 (so browsers must preflight)", r.status_code == 415)
+r = client.post("/mcp", data="{not json", content_type="application/json")
+check("malformed JSON -> 400 parse error", r.status_code == 400 and r.get_json()["error"]["code"] == -32700)
+r = client.post("/mcp", json=[])
+check("empty batch -> JSON-RPC error", r.get_json()["error"]["code"] == -32600)
+r = client.post("/mcp", json=[BODY, {**BODY, "id": 2, "method": "tools/list"}])
+check("batch requests are answered as an array", isinstance(r.get_json(), list) and len(r.get_json()) == 2)
+check("GET /mcp -> 405", client.get("/mcp").status_code == 405)
+check("DELETE /mcp -> 405", client.delete("/mcp").status_code == 405)
+r = client.options("/mcp", headers={"Origin": "http://evil.example",
+                                    "Access-Control-Request-Method": "POST"})
+check("no CORS headers are ever sent",
+      not any(h.lower().startswith("access-control-allow") for h in r.headers.keys())
+      and not any(h.lower().startswith("access-control-allow") for h in client.post("/mcp", json=BODY).headers.keys()))
+
+
+def variant(**kw):
+    a = Flask("variant")
+    mounted, note = register_mcp(a, server.state, **kw)
+    return mounted, note, a.test_client()
+
+
+TOKEN = "s3cret-token-for-selftest"
+mounted, note, tc = variant(bind_host="127.0.0.1", token=TOKEN)
+check("token mode mounts", mounted and "bearer" in note, note)
+check("token: missing -> 401 with WWW-Authenticate",
+      (r := tc.post("/mcp", json=BODY)).status_code == 401 and r.headers.get("WWW-Authenticate") == "Bearer")
+check("token: wrong -> 401", tc.post("/mcp", json=BODY, headers={"Authorization": "Bearer nope"}).status_code == 401)
+check("token: same-length wrong -> 401",
+      tc.post("/mcp", json=BODY, headers={"Authorization": "Bearer " + "x" * len(TOKEN)}).status_code == 401)
+check("token: the old turbomcp fallbacks (X-API-Key, mcp-session-id, body api_key) do not authenticate",
+      all(tc.post("/mcp", json=b, headers=h).status_code == 401 for b, h in [
+          (BODY, {"X-API-Key": TOKEN}), (BODY, {"mcp-session-id": TOKEN}), ({**BODY, "api_key": TOKEN}, {})]))
+check("token: right -> 200", tc.post("/mcp", json=BODY, headers={"Authorization": f"Bearer {TOKEN}"}).status_code == 200)
+check("token: right token works from another host (LAN use)",
+      tc.post("/mcp", json=BODY, base_url="http://192.168.1.10:8477",
+              headers={"Authorization": f"Bearer {TOKEN}"}).status_code == 200)
+check("token: still refuses cross-origin browsers",
+      tc.post("/mcp", json=BODY, headers={"Authorization": f"Bearer {TOKEN}",
+                                          "Origin": "http://evil.example"}).status_code == 403)
+mounted, note, tc = variant(bind_host="0.0.0.0")
+check("non-loopback bind without token: endpoint not mounted",
+      not mounted and "TVD_MCP_TOKEN" in note and tc.post("/mcp", json=BODY).status_code == 404, note)
+mounted, note, tc = variant(bind_host="0.0.0.0", token=TOKEN)
+check("non-loopback bind with token: mounted", mounted)
+mounted, note, tc = variant(bind_host="127.0.0.1", allowed_hosts=frozenset({"tv-box.lan"}))
+check("TVD_MCP_ALLOWED_HOSTS extends the host allowlist",
+      tc.post("/mcp", json=BODY, base_url="http://tv-box.lan:8477").status_code == 200
+      and tc.post("/mcp", json=BODY, base_url="http://other.lan:8477").status_code == 403)
+
 print(f"\n{'='*54}\n{PASS} passed, {FAIL} failed   (tmp: {TMP})")
 sys.exit(1 if FAIL else 0)

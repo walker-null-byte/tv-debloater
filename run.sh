@@ -26,11 +26,11 @@ if [ "$need_adb" = "1" ]; then
   echo "==> adb ready: $(tools/platform-tools/adb version | head -1)"
 fi
 
-# -------------------------------------------------------------- 2. flask --
-if ! "$PYTHON" -c "import flask" >/dev/null 2>&1; then
-  echo "==> Flask not found - installing it (user site-packages)"
-  "$PYTHON" -m pip install --user flask || {
-    echo "!! pip install failed. Try: python3 -m venv .venv && .venv/bin/pip install flask"
+# ------------------------------------------------- 2. flask + turbomcp --
+if ! "$PYTHON" -c "import flask, turbomcp" >/dev/null 2>&1; then
+  echo "==> Flask / TurboMCP not found - installing them (user site-packages)"
+  "$PYTHON" -m pip install --user -r requirements.txt || {
+    echo "!! pip install failed. Try: python3 -m venv .venv && .venv/bin/pip install -r requirements.txt"
     echo "   then start with: .venv/bin/python app.py"
     exit 1
   }

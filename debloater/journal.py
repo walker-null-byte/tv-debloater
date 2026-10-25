@@ -80,7 +80,8 @@ class Journal:
                 batch["ok"] += 1
             else:
                 batch["failed"] += 1
-        return sorted(grouped.values(), key=lambda b: b["ts"], reverse=True)
+        # ts has one-second resolution; reversing first makes ties come out newest-first
+        return sorted(reversed(list(grouped.values())), key=lambda b: b["ts"], reverse=True)
 
     def find(self, entry_id: str) -> dict | None:
         return next((e for e in self._all() if e["id"] == entry_id), None)

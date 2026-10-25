@@ -3,6 +3,7 @@ batching, verification and journaling. Disable (reversible) is the default;
 uninstall is expert-mode only."""
 from __future__ import annotations
 
+import re
 import uuid
 
 from .adb import Adb, AdbError
@@ -10,6 +11,10 @@ from .journal import Journal
 from .rules import RISK_RANK, Rules
 
 MAX_PER_BATCH = 10
+
+# Android's own rule for package names. Names are interpolated into `adb shell`
+# commands, so anything else (";", "&&", "$(...)") must never get that far.
+PACKAGE_NAME_RE = re.compile(r"^[A-Za-z][A-Za-z0-9_]*(\.[A-Za-z0-9_]+)+$")
 
 # Home screens shipped by the platform - disabling any of these needs a
 # replacement launcher installed & enabled first (else: black screen).
@@ -114,6 +119,8 @@ class Actions:
                       row: dict | None = None) -> tuple[bool, str]:
         if action not in ACTION_TEMPLATES:
             return False, f"unknown action {action}"
+        if not PACKAGE_NAME_RE.match(pkg):
+            return False, "not a valid Android package name"
         ok, reason = self.rules.safety_check(pkg)
         if not ok:
             return False, reason
